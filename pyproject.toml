@@ -1,0 +1,33 @@
+[project]
+name = "localagent"
+version = "0.1.0"
+description = "Add your description here"
+readme = "README.md"
+authors = [
+    { name = "pritam-dey3", email = "pritam.pritamdey.984@gmail.com" }
+]
+requires-python = ">=3.14"
+dependencies = [
+  "openai>=2.6.0",
+  "partialjson>=1.0.0",
+  "pydantic>=2.12.3",
+  "pydantic-settings>=2.11.0",
+]
+
+[project.scripts]
+localagent = "localagent:main"
+
+[build-system]
+requires = ["uv_build>=0.9.5,<0.10.0"]
+build-backend = "uv_build"
+
+[dependency-groups]
+dev = [
+  "pre-commit>=4.2.0",
+]
+
+[tool.poe.tasks]
+precmt = "pre-commit run --all-files"
+
+[tool.pyright]
+enableExperimentalFeatures = true
