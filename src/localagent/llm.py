@@ -4,8 +4,8 @@ from openai import AsyncOpenAI
 from partialjson.json_parser import JSONParser
 from pydantic import BaseModel
 
-from src._types import History
-from src.settings import settings
+from ._types import History
+from .settings import settings
 
 parser = JSONParser(strict=False)
 client = AsyncOpenAI(

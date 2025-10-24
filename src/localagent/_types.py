@@ -9,3 +9,24 @@ class Message(BaseModel):
 
 
 History = RootModel[list[Message]]
+
+
+class Action(BaseModel):
+    action_name: str
+
+
+class ActionResult(BaseModel):
+    action_name: str
+    result: str
+
+
+class AgentResponse[A: Action](BaseModel):
+    """Response for the given user query, including the agent's thought process"""
+
+    thought: str
+    msg_to_user: str | None
+    action: A | None
+
+
+class Token(BaseModel):
+    token: str
