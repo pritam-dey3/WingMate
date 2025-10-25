@@ -1,7 +1,16 @@
 from typing import Callable, Coroutine, Sequence, Union
 
-from ._types import Action, ActionResult, AgentResponse, History, Message, Token
+from ._types import (
+    Action,
+    ActionResult,
+    AgentResponse,
+    History,
+    MaxAgentIterationsExceededError,
+    Message,
+    Token,
+)
 from .llm import respond
+from .settings import settings
 
 
 class FinishTurn(Action):
@@ -14,8 +23,9 @@ async def get_agent_response(
     actions: Sequence[Action],
     action_callback: Callable[[Action], Coroutine[None, None, ActionResult]],
 ):
+    history = history.model_copy(deep=True)
     available_actions = Union[tuple(actions) + (FinishTurn,)]
-    while True:
+    for i in range(settings.max_agent_iterations):
         last_response = None
         async for response in respond(history, AgentResponse[available_actions]):  # type: ignore
             if last_response and last_response.msg_to_user:
@@ -43,12 +53,16 @@ async def get_agent_response(
             try:
                 action_call = await action_callback(last_response.action)  # type: ignore
                 action_impact = f"\nAction: {action_call.action_name}\n Result: {action_call.result}"
+                yield last_response.action
             except Exception as e:
                 action_impact = f"\nAction: {last_response.action.action_name}\n Result: Failed to execute action: {e}"  # type: ignore
-            yield last_response.action
 
         msg = Message(
             role="assistant",
             content=f"Thought: {last_response.thought}\nMsg to user: {last_response.msg_to_user}{action_impact}",
         )
         history.root.append(msg)
+    else:
+        raise MaxAgentIterationsExceededError(
+            f"Max agent iterations ({settings.max_agent_iterations}) exceeded."
+        )

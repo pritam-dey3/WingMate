@@ -3,6 +3,14 @@ from typing import Literal
 from pydantic import BaseModel, RootModel
 
 
+class LocalAgentError(Exception):
+    pass
+
+
+class MaxAgentIterationsExceededError(LocalAgentError):
+    pass
+
+
 class Message(BaseModel):
     role: Literal["system", "user", "assistant"]
     content: str
