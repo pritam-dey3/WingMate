@@ -1,4 +1,3 @@
-from pydantic import field_validator
 from pydantic_settings import (
     BaseSettings,
     PydanticBaseSettingsSource,
@@ -8,20 +7,19 @@ from pydantic_settings import (
 
 
 class Settings(BaseSettings):
-    api_key: str
-    openrouter_model_list: list[str]
+    llm_model_name: str
+    llm_base_url: str
+
+    llm_api_key: str | None = None
+    llm_api_extra_kw: dict = {}
     max_agent_iterations: int = 7
 
-    @classmethod
-    @field_validator("openrouter_model_list", mode="before")
-    def validate_openrouter_model_list(cls, v):
-        return [model.strip() for model in v.split(",")]
-
     model_config = SettingsConfigDict(
-        yaml_file="config.yaml",
+        yaml_file="local-agent-config.yaml",
         yaml_file_encoding="utf-8",
         env_file=".env",
         env_file_encoding="utf-8",
+        extra="ignore",
     )
 
     @classmethod

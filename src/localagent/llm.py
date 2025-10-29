@@ -9,8 +9,8 @@ from .settings import settings
 
 parser = JSONParser(strict=False)
 client = AsyncOpenAI(
-    base_url="https://openrouter.ai/api/v1",
-    api_key=settings.api_key,
+    base_url=settings.llm_base_url,
+    api_key=settings.llm_api_key,
 )
 
 
@@ -18,7 +18,7 @@ async def respond[T: BaseModel](
     history: History, schema: Type[T]
 ) -> AsyncGenerator[T, None]:
     response = await client.chat.completions.create(
-        model=settings.openrouter_model_list[0],
+        model=settings.llm_model_name,
         messages=history.model_dump(),
         response_format={
             "type": "json_schema",
@@ -30,14 +30,7 @@ async def respond[T: BaseModel](
             },
         },
         stream=True,
-        extra_body={
-            "provider": {
-                "max_price": {"prompt": 0, "completion": 0},
-                "require_parameters": True,
-                "sort": "price",
-            },
-            "models": settings.openrouter_model_list,
-        },
+        extra_body=settings.llm_api_extra_kw,
     )
 
     content = ""
