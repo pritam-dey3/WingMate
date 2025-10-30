@@ -1,4 +1,5 @@
 from .agent import LocalAgent
+from .environment import DefaultEnvironment, Environment, answer_tool, follow_up_tool
 from .types import (
     AgentResponse,
     CallToolRequestParams,
@@ -21,6 +22,11 @@ __all__ = [
     "Token",
     # agent
     "LocalAgent",
+    # environment
+    "Environment",
+    "DefaultEnvironment",
+    "answer_tool",
+    "follow_up_tool",
 ]
 
 
