@@ -1,6 +1,15 @@
+from enum import Enum
 from typing import Literal
 
-from pydantic import BaseModel, RootModel
+from mcp.types import CallToolRequestParams as CallToolRequestParamsMCP
+from pydantic import BaseModel, ConfigDict, Field, RootModel
+from pydantic.json_schema import SkipJsonSchema
+
+
+class CallToolRequestParams(CallToolRequestParamsMCP):
+    meta: SkipJsonSchema[CallToolRequestParamsMCP.Meta | None] = Field(
+        alias="_meta", default=None
+    )
 
 
 class LocalAgentError(Exception):
@@ -11,29 +20,29 @@ class MaxAgentIterationsExceededError(LocalAgentError):
     pass
 
 
+class MessageFlag(str, Enum):
+    is_system_instruction = "is_system_instruction"
+    is_system_response = "is_system_response"
+    is_tool_result = "is_tool_result"
+
+
 class Message(BaseModel):
     role: Literal["system", "user", "assistant"]
     content: str
+    flags: list[str] = Field(default_factory=list)
+
+    model_config = ConfigDict(extra="allow")
 
 
 History = RootModel[list[Message]]
 
 
-class Action(BaseModel):
-    action_name: str
-
-
-class ActionResult(BaseModel):
-    action_name: str
-    result: str
-
-
-class AgentResponse[A: Action](BaseModel):
+class AgentResponse(BaseModel):
     """Response for the given user query, including the agent's thought process"""
 
-    thought: str
-    msg_to_user: str | None
-    action: A | None
+    thought: str | None = None
+    msg_to_user: str | None = None
+    action: CallToolRequestParams | None = None
 
 
 class Token(BaseModel):

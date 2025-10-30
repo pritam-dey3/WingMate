@@ -14,7 +14,7 @@ client = AsyncOpenAI(
 )
 
 
-async def respond[T: BaseModel](
+async def stream_agent_response[T: BaseModel](
     history: History, schema: Type[T]
 ) -> AsyncGenerator[T, None]:
     response = await client.chat.completions.create(
