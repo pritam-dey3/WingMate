@@ -1,4 +1,5 @@
-from ._types import (
+from .agent import LocalAgent
+from .types import (
     AgentResponse,
     CallToolRequestParams,
     History,
@@ -18,6 +19,8 @@ __all__ = [
     "Message",
     "MessageFlag",
     "Token",
+    # agent
+    "LocalAgent",
 ]
 
 

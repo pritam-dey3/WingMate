@@ -3,7 +3,9 @@ from typing import Awaitable, Callable
 
 from mcp.types import Tool
 
-from .._types import (
+from .llm import stream_agent_response
+from .settings import settings
+from .types import (
     AgentResponse,
     CallToolRequestParams,
     History,
@@ -11,8 +13,6 @@ from .._types import (
     Message,
     MessageFlag,
 )
-from ..llm import stream_agent_response
-from ..settings import settings
 
 # terminating actions
 answer_tool = Tool(
@@ -45,7 +45,7 @@ follow_up_tool = Tool(
 )
 
 
-class SimpleAgent:
+class LocalAgent:
     """
     An agent that orchestrates LLM interactions with tool calling capabilities.
 
@@ -55,6 +55,25 @@ class SimpleAgent:
     3. Stream LLM response
     4. Tool call (with optional callback)
     5. Either terminate turn or continue loop with tool results
+
+    ---
+    config:
+    theme: redux
+    ---
+    flowchart TD
+        Q["user query"] --> L["loop"]
+        L --> H[Update History]
+        H --> CE(("Context<br>Engineering<br>hook"))
+        CE --> S["Stream"]
+        S --> RS[Full Response]
+        RS -.- RSH[LLM Response<br>hook]
+        RS --> TC(("Tool Call"))
+        TC --> TCR["Result"]
+        TCR --> TT[Terminate]
+        TCR --> L
+
+        L@{ shape: terminal}
+        TT@{ shape: terminal}
     """
 
     def __init__(
@@ -195,15 +214,12 @@ class SimpleAgent:
             if not response.msg_to_user:
                 continue
 
-            current_content = response.msg_to_user
-
-            # Handle incremental updates
-            if current_content.startswith(prev_content):
-                new_content = current_content[len(prev_content) :]
+            if response.msg_to_user.startswith(prev_content):
+                new_content = response.msg_to_user[len(prev_content) :]
                 if new_content:
-                    prev_content = current_content
+                    prev_content = response.msg_to_user
                     yield new_content
             else:
                 yield self.message_separation_token
-                prev_content = current_content
-                yield current_content
+                prev_content = response.msg_to_user
+                yield response.msg_to_user
