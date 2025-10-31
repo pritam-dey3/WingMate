@@ -98,8 +98,6 @@ Example response:
   }
 }
 
-Note: The message to user should not contain any tool call information.
-
 You must not make a lot of tool calls and try to respond with the answer as early as possible ({{ remaining_iterations }} iterations remaining).
 You must respond with the `answer` tool when you have the final answer.
 
