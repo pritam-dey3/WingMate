@@ -7,8 +7,8 @@ from pydantic_settings import (
 
 
 class Settings(BaseSettings):
-    llm_model_name: str
-    llm_base_url: str
+    llm_model_name: str | None = None
+    llm_base_url: str | None = None
 
     llm_api_key: str | None = None
     llm_api_extra_kw: dict = {}

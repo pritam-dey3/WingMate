@@ -8,16 +8,25 @@ from .settings import settings
 from .types import History
 
 parser = JSONParser(strict=False)
-client = AsyncOpenAI(
-    base_url=settings.llm_base_url,
-    api_key=settings.llm_api_key,
-)
 
 
 async def stream_agent_response[T: BaseModel](
-    history: History, schema: Type[T]
+    history: History,
+    schema: Type[T],
+    openai_client: AsyncOpenAI | None = None,
 ) -> AsyncGenerator[T, None]:
-    response = await client.chat.completions.create(
+    assert settings.llm_model_name is not None, (
+        "llm_model_name must be set in `local-agent-config.yaml`"
+    )
+    if openai_client is None:
+        assert settings.llm_base_url is not None, (
+            "llm_base_url must be set in `local-agent-config.yaml`"
+        )
+        openai_client = AsyncOpenAI(
+            base_url=settings.llm_base_url,
+            api_key=settings.llm_api_key,
+        )
+    response = await openai_client.chat.completions.create(
         model=settings.llm_model_name,
         messages=history.model_dump(),
         response_format={

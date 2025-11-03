@@ -1,5 +1,7 @@
 from collections.abc import AsyncGenerator
 
+from openai import AsyncOpenAI
+
 from .environment import Environment
 from .llm import stream_agent_response
 from .settings import settings
@@ -21,6 +23,7 @@ class LocalAgent:
         environment: Environment,
         max_iterations: int = settings.max_agent_iterations,
         message_separation_token: str = "\n\n",
+        openai_client: AsyncOpenAI | None = None,
     ):
         """
         Initialize the LocalAgent.
@@ -32,10 +35,12 @@ class LocalAgent:
                 Defaults to settings.max_agent_iterations.
             message_separation_token: Token used to separate messages when streaming responses.
                 Defaults to "\n\n".
+            openai_client: Optional AsyncOpenAI client for LLM interactions. If not provided, a default client will be created using the config provided in `local-agent-config.yaml`.
         """
         self.environment = environment
         self.max_iterations = max_iterations
         self.message_separation_token = message_separation_token
+        self.openai_client = openai_client
 
     async def run(self, history: History):
         """
@@ -68,7 +73,9 @@ class LocalAgent:
             )
 
             response: AgentResponse | None = None
-            async for response in stream_agent_response(context, AgentResponse):
+            async for response in stream_agent_response(
+                context, AgentResponse, self.openai_client
+            ):
                 yield response
 
             # Agent Message Completion Hook via Environment
