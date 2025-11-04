@@ -53,3 +53,4 @@ class OpenAiClientConfig(BaseModel):
     llm_model_name: str
     base_url: str
     api_key: str | None
+    extra_kw: dict = {}

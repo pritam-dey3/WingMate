@@ -26,6 +26,7 @@ async def stream_agent_response[T: BaseModel](
             llm_model_name=settings.llm_model_name,
             base_url=settings.llm_base_url,
             api_key=settings.llm_api_key,
+            extra_kw=settings.llm_api_extra_kw,
         )
     client = AsyncOpenAI(
         base_url=client_config.base_url,
@@ -44,7 +45,7 @@ async def stream_agent_response[T: BaseModel](
             },
         },
         stream=True,
-        extra_body=settings.llm_api_extra_kw,
+        extra_body=client_config.extra_kw,
     )
 
     content = ""
