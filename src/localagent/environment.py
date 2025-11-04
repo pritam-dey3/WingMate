@@ -18,11 +18,6 @@ class Environment(ABC):
         pass
 
     @abstractmethod
-    async def call_tool(self, action: CallToolRequestParams) -> str:
-        """Execute the tool call and return the result as a string."""
-        pass
-
-    @abstractmethod
     async def on_agent_message_completed(
         self, last_response: AgentResponse
     ) -> Message | None:

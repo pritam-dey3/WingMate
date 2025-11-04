@@ -47,3 +47,9 @@ class AgentResponse(BaseModel):
 
 class Token(BaseModel):
     token: str
+
+
+class OpenAiClientConfig(BaseModel):
+    llm_model_name: str
+    base_url: str
+    api_key: str | None

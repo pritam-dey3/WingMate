@@ -5,7 +5,7 @@ from partialjson.json_parser import JSONParser
 from pydantic import BaseModel
 
 from .settings import settings
-from .types import History
+from .types import History, OpenAiClientConfig
 
 parser = JSONParser(strict=False)
 
@@ -13,21 +13,26 @@ parser = JSONParser(strict=False)
 async def stream_agent_response[T: BaseModel](
     history: History,
     schema: Type[T],
-    openai_client: AsyncOpenAI | None = None,
+    client_config: OpenAiClientConfig | None = None,
 ) -> AsyncGenerator[T, None]:
-    assert settings.llm_model_name is not None, (
-        "llm_model_name must be set in `local-agent-config.yaml`"
-    )
-    if openai_client is None:
+    if client_config is None:
+        assert settings.llm_model_name is not None, (
+            "llm_model_name must be set in `local-agent-config.yaml`"
+        )
         assert settings.llm_base_url is not None, (
             "llm_base_url must be set in `local-agent-config.yaml`"
         )
-        openai_client = AsyncOpenAI(
+        client_config = OpenAiClientConfig(
+            llm_model_name=settings.llm_model_name,
             base_url=settings.llm_base_url,
             api_key=settings.llm_api_key,
         )
-    response = await openai_client.chat.completions.create(
-        model=settings.llm_model_name,
+    client = AsyncOpenAI(
+        base_url=client_config.base_url,
+        api_key=client_config.api_key,
+    )
+    response = await client.chat.completions.create(
+        model=client_config.llm_model_name,
         messages=history.model_dump(),
         response_format={
             "type": "json_schema",

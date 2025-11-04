@@ -1,7 +1,5 @@
 from collections.abc import AsyncGenerator
 
-from openai import AsyncOpenAI
-
 from .environment import Environment
 from .llm import stream_agent_response
 from .settings import settings
@@ -10,6 +8,7 @@ from .types import (
     History,
     MaxAgentIterationsExceededError,
     Message,
+    OpenAiClientConfig,
 )
 
 
@@ -23,7 +22,7 @@ class LocalAgent:
         environment: Environment,
         max_iterations: int = settings.max_agent_iterations,
         message_separation_token: str = "\n\n",
-        openai_client: AsyncOpenAI | None = None,
+        openai_client: OpenAiClientConfig | None = None,
     ):
         """
         Initialize the LocalAgent.
@@ -102,7 +101,7 @@ class LocalAgent:
             f"Agent exceeded maximum iterations ({self.max_iterations})"
         )
 
-    async def stream(self, history: History) -> AsyncGenerator[str, None]:
+    async def stream_text(self, history: History) -> AsyncGenerator[str, None]:
         """
         Stream the agent's responses as plain text for a given user query.
 
