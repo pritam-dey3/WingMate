@@ -11,6 +11,8 @@ class CallToolRequestParams(CallToolRequestParamsMCP):
         alias="_meta", default=None
     )
 
+    model_config = ConfigDict(extra="forbid")
+
 
 class LocalAgentError(Exception):
     pass
