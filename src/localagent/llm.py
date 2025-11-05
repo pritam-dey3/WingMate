@@ -1,3 +1,5 @@
+import json
+import logging
 from typing import AsyncGenerator, Type
 
 from openai import AsyncOpenAI
@@ -6,6 +8,8 @@ from pydantic import BaseModel
 
 from .settings import settings
 from .types import History, OpenAiClientConfig
+
+logger = logging.getLogger(__name__)
 
 parser = JSONParser(strict=False)
 
@@ -32,33 +36,30 @@ async def stream_agent_response[T: BaseModel](
         base_url=client_config.base_url,
         api_key=client_config.api_key,
     )
-    response = await client.chat.completions.create(
-        model=client_config.llm_model_name,
-        messages=history.model_dump(),
-        response_format={
-            "type": "json_schema",
-            "json_schema": {
-                "name": schema.__class__.__name__,
-                "description": schema.__doc__ or "",
-                "schema": schema.model_json_schema(),
-                "strict": True,
-            },
-        },
-        stream=True,
-        extra_body=client_config.extra_kw,
+    logger.info(
+        "Schema to openai:\n" + json.dumps(schema.model_json_schema(), indent=2)
     )
 
     content = ""
     last_yielded = schema()
-    async for chunk in response:
-        if not chunk.choices[0].delta.content:
-            continue
-        content += chunk.choices[0].delta.content
-        try:
-            parsed = parser.parse(content)
-            result = schema.model_validate(parsed)
-            if result != last_yielded:
-                last_yielded = result
-                yield result
-        except Exception:
-            continue
+
+    async with client.responses.stream(
+        model=client_config.llm_model_name,
+        input=history.model_dump(),
+        text_format=schema,
+        extra_body=client_config.extra_kw,
+    ) as stream:
+        async for event in stream:
+            if (
+                event.type == "response.output_text.delta"
+                or event.type == "response.refusal.delta"
+            ):
+                content += event.delta
+                try:
+                    parsed = parser.parse(content)
+                    result = schema.model_validate(parsed)
+                    if result != last_yielded:
+                        last_yielded = result
+                        yield result
+                except Exception:
+                    continue

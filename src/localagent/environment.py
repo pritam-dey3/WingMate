@@ -1,4 +1,5 @@
 from abc import ABC, abstractmethod
+from typing import Sequence
 
 from jinja2 import Template
 from mcp.types import Tool
@@ -93,11 +94,14 @@ Example response:
   }
 }
 
-You must not make a lot of tool calls and try to respond with the answer as early as possible ({{ remaining_iterations }} iterations remaining).
-You must respond with the `answer` tool when you have the final answer.
+CRITICAL: You have {{ remaining_iterations }} iterations remaining. Minimize tool calls.
+
+TERMINATION REQUIREMENT: As soon as you have sufficient information to answer the user's query, you MUST immediately call one of these terminating tools: {{ terminating_tools | map(attribute='name') | join(', ') }}. Do NOT make additional tool calls after you can answer. Do NOT continue exploring unnecessarily.
 
 {% if extra_instructions %}
 {{ extra_instructions }}
+
+Complete the task and IMMEDIATELY terminate with the appropriate terminating tool once done. Do NOT wait or ask for confirmation.
 {% endif %}
 """
 
@@ -105,7 +109,12 @@ You must respond with the `answer` tool when you have the final answer.
 class DefaultEnvironment(Environment):
     """Default environment implementation with standard behavior."""
 
-    def __init__(self, tools: list[Tool], extra_instructions: str | None = None):
+    def __init__(
+        self,
+        tools: list[Tool],
+        extra_instructions: str | None = None,
+        terminating_tools: Sequence[Tool] = (answer_tool, follow_up_tool),
+    ):
         """
         Initialize the default environment.
 
@@ -115,7 +124,8 @@ class DefaultEnvironment(Environment):
         """
         self.extra_instructions = extra_instructions
         self.system_prompt_template = Template(DEFAULT_SYSTEM_PROMPT_TEMPLATE)
-        self.tools = list(tools) + [answer_tool, follow_up_tool]
+        self.tools = list(tools) + list(terminating_tools)
+        self.terminating_tools = terminating_tools
 
     async def get_context(self, history: History, remaining_iterations: int) -> History:
         """
@@ -138,6 +148,7 @@ class DefaultEnvironment(Environment):
             tools=tools_to_show,
             remaining_iterations=remaining_iterations,
             extra_instructions=self.extra_instructions,
+            terminating_tools=self.terminating_tools,
         )
 
         # Prepend system prompt to history
@@ -180,10 +191,12 @@ class DefaultEnvironment(Environment):
         if not last_response.action:
             return Message(
                 role="user",
-                content="No action taken. You must conclude with an answer or a query.",
+                content=f"No action taken. If you have not yet reached a conclusion, please feel free to explore. If you have, you must conclude by calling any one of the terminating tool(s): {[tool.name for tool in self.terminating_tools]}.",
                 flags=[MessageFlag.is_system_response],
             )
-        elif last_response.action.name in ["answer", "follow_up"]:
+        elif last_response.action.tool_name in [
+            tool.name for tool in self.terminating_tools
+        ]:
             return None
 
         # Execute the tool and return the result as a Message

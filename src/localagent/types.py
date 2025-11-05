@@ -1,17 +1,13 @@
 from enum import Enum
 from typing import Literal
 
-from mcp.types import CallToolRequestParams as CallToolRequestParamsMCP
 from pydantic import BaseModel, ConfigDict, Field, RootModel
 from pydantic.json_schema import SkipJsonSchema
 
 
-class CallToolRequestParams(CallToolRequestParamsMCP):
-    meta: SkipJsonSchema[CallToolRequestParamsMCP.Meta | None] = Field(
-        alias="_meta", default=None
-    )
-
-    model_config = ConfigDict(extra="forbid")
+class CallToolRequestParams(BaseModel):
+    tool_name: str
+    arguments: dict
 
 
 class LocalAgentError(Exception):
@@ -45,6 +41,7 @@ class AgentResponse(BaseModel):
     thought: str | None = None
     msg_to_user: str | None = None
     action: CallToolRequestParams | None = None
+    turn_completed: SkipJsonSchema[bool] = False
 
 
 class Token(BaseModel):
