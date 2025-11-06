@@ -1,6 +1,5 @@
 import logging
-from collections.abc import AsyncGenerator
-from typing import Type
+from typing import AsyncGenerator, Type
 
 from .environment import Environment
 from .llm import stream_agent_response
@@ -57,7 +56,7 @@ class LocalAgent[E: Environment, AR: AgentResponse]:
         self.message_separation_token = message_separation_token
         self.openai_client = openai_client
 
-    async def run(self, history: History):
+    async def run(self, history: History) -> AsyncGenerator[AgentResponse, None]:
         """
         Run the agent loop for a given user query.
 
