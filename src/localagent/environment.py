@@ -1,5 +1,5 @@
 from abc import ABC, abstractmethod
-from typing import Sequence
+from typing import Callable, Sequence
 
 from jinja2 import Template
 from mcp.types import Tool
@@ -112,7 +112,7 @@ class DefaultEnvironment(Environment):
     def __init__(
         self,
         tools: list[Tool],
-        extra_instructions: str | None = None,
+        extra_instructions: Callable[[], str] | str | None = None,
         terminating_tools: Sequence[Tool] = (answer_tool, follow_up_tool),
     ):
         """
@@ -147,7 +147,9 @@ class DefaultEnvironment(Environment):
         system_prompt = self.system_prompt_template.render(
             tools=tools_to_show,
             remaining_iterations=remaining_iterations,
-            extra_instructions=self.extra_instructions,
+            extra_instructions=self.extra_instructions()
+            if callable(self.extra_instructions)
+            else self.extra_instructions,
             terminating_tools=self.terminating_tools,
         )
 

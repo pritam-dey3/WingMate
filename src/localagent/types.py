@@ -1,5 +1,5 @@
 from enum import Enum
-from typing import Literal
+from typing import Any, Literal
 
 from pydantic import BaseModel, ConfigDict, Field, RootModel
 from pydantic.json_schema import SkipJsonSchema
@@ -7,7 +7,7 @@ from pydantic.json_schema import SkipJsonSchema
 
 class CallToolRequestParams(BaseModel):
     tool_name: str
-    arguments: dict
+    arguments: Any
 
 
 class LocalAgentError(Exception):
