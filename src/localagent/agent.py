@@ -79,7 +79,6 @@ class LocalAgent[E: Environment, AR: AgentResponse]:
 
         iteration = 0
         while iteration < self.max_iterations:
-            logger.info(history.model_dump_json(indent=2))
             iteration += 1
 
             # Context Engineering via Environment

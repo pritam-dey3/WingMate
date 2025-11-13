@@ -1,4 +1,3 @@
-import json
 import logging
 from typing import AsyncGenerator, Type
 
@@ -36,9 +35,9 @@ async def stream_agent_response[T: BaseModel](
         base_url=client_config.base_url,
         api_key=client_config.api_key,
     )
-    logger.info(
-        "Schema to openai:\n" + json.dumps(schema.model_json_schema(), indent=2)
-    )
+    # logger.info(
+    #     "Schema to openai:\n" + json.dumps(schema.model_json_schema(), indent=2)
+    # )
 
     content = ""
     last_yielded = schema()

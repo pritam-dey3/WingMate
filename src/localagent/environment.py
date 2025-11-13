@@ -1,3 +1,4 @@
+import logging
 from abc import ABC, abstractmethod
 from typing import Callable, Sequence
 
@@ -5,6 +6,8 @@ from jinja2 import Template
 from mcp.types import Tool
 
 from .types import AgentResponse, CallToolRequestParams, History, Message, MessageFlag
+
+logger = logging.getLogger(__name__)
 
 
 class Environment(ABC):
@@ -101,7 +104,7 @@ TERMINATION REQUIREMENT: As soon as you have sufficient information to answer th
 {% if extra_instructions %}
 {{ extra_instructions }}
 
-Complete the task and IMMEDIATELY terminate with the appropriate terminating tool once done. Do NOT wait or ask for confirmation.
+Complete the task and IMMEDIATELY end conversation with the appropriate terminating tool once done. Do NOT wait or ask for confirmation.
 {% endif %}
 """
 
@@ -164,6 +167,7 @@ class DefaultEnvironment(Environment):
             ]
             + history.root
         )
+        logger.info("History:\n" + new_history.model_dump_json(indent=2))
 
         return new_history
 
