@@ -86,7 +86,6 @@ You must return a valid json object as per the schema provided.
 
 Example response:
 {
-  "thought": "I need to use a tool",
   "msg_to_user": "<some message to keep user engaged>", (message to user should not contain any error, tool call or technical information)
   "action": {
     "name": "tool_name",
