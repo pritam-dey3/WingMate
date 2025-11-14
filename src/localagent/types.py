@@ -3,6 +3,9 @@ from typing import Any, Literal
 
 from pydantic import BaseModel, ConfigDict, Field, RootModel
 from pydantic.json_schema import SkipJsonSchema
+from typing_extensions import Sentinel
+
+TERMINATE = Sentinel("TERMINATE")
 
 
 class CallToolRequestParams(BaseModel):
@@ -22,12 +25,13 @@ class MessageFlag(str, Enum):
     is_system_instruction = "is_system_instruction"
     is_system_response = "is_system_response"
     is_tool_result = "is_tool_result"
+    is_summary = "is_summary"
 
 
 class Message(BaseModel):
     role: Literal["system", "user", "assistant"]
     content: str
-    flags: list[str] = Field(default_factory=list)
+    flags: SkipJsonSchema[list[str]] = Field(default_factory=list)
 
     model_config = ConfigDict(extra="allow")
 

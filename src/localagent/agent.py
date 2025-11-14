@@ -5,6 +5,7 @@ from .environment import Environment
 from .llm import stream_agent_response
 from .settings import settings
 from .types import (
+    TERMINATE,
     AgentResponse,
     History,
     MaxAgentIterationsExceededError,
@@ -83,12 +84,13 @@ class LocalAgent[E: Environment, AR: AgentResponse]:
 
             # Context Engineering via Environment
             context = await self.environment.get_context(
-                history, self.max_iterations - iteration
+                self.max_iterations - iteration
             )
 
             response: AgentResponse | None = None
             schema = align_schema_with_tools(
-                schema=self.agent_response_schema, tools=self.environment.tools
+                schema=self.agent_response_schema,
+                tools=await self.environment.get_tools(),
             )
             async for response in stream_agent_response(
                 context, schema, self.openai_client
@@ -111,7 +113,7 @@ class LocalAgent[E: Environment, AR: AgentResponse]:
                 response
             )
 
-            if continuation_message is None:
+            if continuation_message is TERMINATE:
                 return
 
             # Add continuation message to history

@@ -12,7 +12,10 @@ class Settings(BaseSettings):
 
     llm_api_key: str | None = None
     llm_api_extra_kw: dict = {}
+
     max_agent_iterations: int = 7
+    max_history_length: int | None = 11
+    reduce_history_by: int = 6
 
     model_config = SettingsConfigDict(
         yaml_file="local-agent-config.yaml",
