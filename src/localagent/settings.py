@@ -15,7 +15,7 @@ class Settings(BaseSettings):
 
     max_agent_iterations: int = 7
     max_history_length: int | None = 11
-    reduce_history_by: int = 6
+    reduce_history_by: int = 7
 
     model_config = SettingsConfigDict(
         yaml_file="local-agent-config.yaml",

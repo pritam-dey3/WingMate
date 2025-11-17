@@ -99,7 +99,7 @@ class LocalAgent[E: Environment, AR: AgentResponse]:
 
             # Agent Message Completion Hook via Environment
             assert response, "Agent failed to produce a response"
-            history.root.append(
+            self.environment.history.root.append(
                 Message(
                     role="assistant",
                     content=response.model_dump_json(indent=2),
@@ -117,7 +117,7 @@ class LocalAgent[E: Environment, AR: AgentResponse]:
                 return
 
             # Add continuation message to history
-            history.root.append(continuation_message)
+            self.environment.history.root.append(continuation_message)
 
         raise MaxAgentIterationsExceededError(
             f"Agent exceeded maximum iterations ({self.max_iterations})"

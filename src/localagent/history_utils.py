@@ -8,6 +8,17 @@ class ConvSummary(BaseModel):
     summary: str
 
 
+def last_summary_index(history: History) -> int:
+    return next(
+        (
+            idx
+            for idx, message in reversed(list(enumerate(history.root)))
+            if MessageFlag.is_summary in message.flags
+        ),
+        0,
+    )
+
+
 async def create_summary_entry(
     old_history: History,
     reduce_by: int,
@@ -29,7 +40,7 @@ async def create_summary_entry(
         client_config=client_config,
     )
     history.root.insert(
-        reduce_by,
+        reduce_by + last_summary_index(history),
         Message(
             role="system",
             content=f"Summary of previous conversation: {summary_response.summary}",

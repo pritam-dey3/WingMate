@@ -5,7 +5,7 @@ from typing import Awaitable, Callable
 from jinja2 import Template
 from mcp.types import Tool
 
-from .history_utils import create_summary_entry
+from .history_utils import create_summary_entry, last_summary_index
 from .settings import settings
 from .types import (
     TERMINATE,
@@ -22,6 +22,8 @@ logger = logging.getLogger(__name__)
 
 class Environment(ABC):
     """Defines the environment in which the agent operates, including tools, context, and termination conditions."""
+
+    history: History
 
     @abstractmethod
     async def get_context(self, remaining_iterations: int) -> History:
@@ -85,11 +87,12 @@ follow_up_tool = Tool(
     },
 )
 
+
 DEFAULT_SYSTEM_PROMPT_TEMPLATE = """You are a helpful AI agent with access to the following tools:
 
 {% for tool in tools %}
-- {{ tool.name }}: {{ tool.description }}
-  Input Schema: {{ tool.inputSchema }}
+- {{ tool.name }}: {{ tool.description | replace('\n', '\n    ') }}
+    Input Schema: {{ tool.inputSchema | safe }}
 {% endfor %}
 
 When you decide to use a tool, provide the tool name and arguments in your response. After the tool call, you will receive the result which you should use to continue the conversation.
@@ -98,14 +101,14 @@ You must return a valid json object as per the schema provided.
 
 Example response:
 {
-  "msg_to_user": "<some message to keep user engaged>", (message to user should not contain any error, tool call or technical information)
-  "action": {
-    "name": "tool_name",
-    "arguments": {
-      "arg1": "value1",
-      "arg2": "value2"
+    "msg_to_user": "<some message to keep user engaged>", (message to user should not contain any error, tool call or technical information)
+    "action": {
+        "name": "tool_name",
+        "arguments": {
+            "arg1": "value1",
+            "arg2": "value2"
+        }
     }
-  }
 }
 
 {% if remaining_iterations <= 7 %}
@@ -114,7 +117,7 @@ CRITICAL: You have {{ remaining_iterations }} iterations remaining. Minimize too
 CRITICAL: Try to complete your task in as few iterations as possible.
 {% endif %}
 
-{% if len(terminating_tools) != 0 %}
+{% if terminating_tools|length != 0 %}
 TERMINATION REQUIREMENT: As soon as you have sufficient information to answer the user's query, you MUST immediately call one of these terminating tools: {{ terminating_tools | map(attribute='name') | join(', ') }}. Do NOT make additional tool calls after you can answer. DO NOT continue exploring unnecessarily.
 {% endif %}
 
@@ -126,7 +129,7 @@ Complete the task and IMMEDIATELY end conversation with the appropriate terminat
 """
 
 CONTINUATION_TEMPLATE = """No tool was called in the last response. If you have not yet reached a conclusion, please feel free to explore.
-{% if len(terminating_tools) != 0 %}
+{% if terminating_tools|length != 0 %}
 If you have, you must conclude by calling any one of the terminating tool(s): {{ terminating_tools | join(', ') }}.
 {% endif %}"""
 
@@ -166,20 +169,12 @@ class DefaultEnvironment(Environment):
         Removes any existing system instruction and prepends a new one with
         current tools and remaining iterations.
         """
-        last_summary_idx = next(
-            (
-                idx
-                for idx, message in reversed(list(enumerate(self.history.root)))
-                if MessageFlag.is_summary in message.flags
-            ),
-            0,
-        )
 
         if (
             self.max_history_length is not None
-            and len(self.history.root) - last_summary_idx > self.max_history_length
+            and len(self.history.root) - last_summary_index(self.history)
+            > self.max_history_length
         ):
-            print("Reducing history length...")
             self.history = await create_summary_entry(
                 old_history=self.history,
                 reduce_by=self.reduce_history_by,
@@ -187,7 +182,9 @@ class DefaultEnvironment(Environment):
             )
 
         # Extract relevant history after last summary
-        history = History.model_validate(self.history.root[last_summary_idx:])
+        history = History.model_validate(
+            self.history.root[last_summary_index(self.history) :]
+        )
         if history.root and MessageFlag.is_system_instruction in history.root[0].flags:
             history.root = history.root[1:]
 
