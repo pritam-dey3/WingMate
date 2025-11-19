@@ -7,7 +7,6 @@ from .settings import settings
 from .types import (
     TERMINATE,
     AgentResponse,
-    History,
     MaxAgentIterationsExceededError,
     Message,
     OpenAiClientConfig,
@@ -57,7 +56,7 @@ class LocalAgent[E: Environment, AR: AgentResponse]:
         self.message_separation_token = message_separation_token
         self.openai_client = openai_client
 
-    async def run(self, history: History) -> AsyncGenerator[AgentResponse, None]:
+    async def run(self) -> AsyncGenerator[AgentResponse, None]:
         """
         Run the agent loop for a given user query.
 
@@ -76,7 +75,6 @@ class LocalAgent[E: Environment, AR: AgentResponse]:
         Raises:
             MaxAgentIterationsExceededError: If the agent exceeds max_iterations
         """
-        history = history.model_copy(deep=True)
 
         iteration = 0
         while iteration < self.max_iterations:
@@ -87,7 +85,7 @@ class LocalAgent[E: Environment, AR: AgentResponse]:
                 self.max_iterations - iteration
             )
 
-            response: AgentResponse | None = None
+            response = None
             schema = align_schema_with_tools(
                 schema=self.agent_response_schema,
                 tools=await self.environment.get_tools(),
@@ -123,7 +121,7 @@ class LocalAgent[E: Environment, AR: AgentResponse]:
             f"Agent exceeded maximum iterations ({self.max_iterations})"
         )
 
-    async def stream_text(self, history: History) -> AsyncGenerator[str, None]:
+    async def stream_text(self) -> AsyncGenerator[str, None]:
         """
         Stream the agent's responses as plain text for a given user query.
 
@@ -140,7 +138,7 @@ class LocalAgent[E: Environment, AR: AgentResponse]:
             MaxAgentIterationsExceededError: If the agent exceeds max_iterations
         """
         prev_content = ""
-        async for response in self.run(history):
+        async for response in self.run():
             if not response.msg_to_user:
                 continue
 

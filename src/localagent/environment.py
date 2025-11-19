@@ -219,7 +219,7 @@ class DefaultEnvironment(Environment):
             ]
             + history.root
         )
-        logger.info("History:\n" + new_history.model_dump_json(indent=2))
+        logger.debug("History:\n" + new_history.model_dump_json(indent=2))
 
         return new_history
 
