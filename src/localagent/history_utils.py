@@ -39,12 +39,18 @@ async def create_summary_entry(
         schema=ConvSummary,
         client_config=client_config,
     )
-    history.root.insert(
-        reduce_by + last_summary_index(history),
-        Message(
-            role="system",
-            content=f"Summary of previous conversation: {summary_response.summary}",
-            flags=[MessageFlag.is_summary],
-        ),
+    # history.root.insert(
+    #     reduce_by + last_summary_index(history),
+    #     Message(
+    #         role="system",
+    #         content=f"Summary of previous conversation: {summary_response.summary}",
+    #         flags=[MessageFlag.is_summary],
+    #     ),
+    # )
+    history.add_message(
+        role="system",
+        content=f"Summary of previous conversation: {summary_response.summary}",
+        flags=[MessageFlag.is_summary],
+        index=reduce_by + last_summary_index(history),
     )
     return history

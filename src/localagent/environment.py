@@ -209,19 +209,25 @@ class DefaultEnvironment(Environment):
         )
 
         # Prepend system prompt to history
-        new_history = History.model_validate(
-            [
-                {
-                    "role": "system",
-                    "content": system_prompt,
-                    "flags": [MessageFlag.is_system_instruction],
-                }
-            ]
-            + history.root
+        # new_history = History.model_validate(
+        #     [
+        #         {
+        #             "role": "system",
+        #             "content": system_prompt,
+        #             "flags": [MessageFlag.is_system_instruction],
+        #         }
+        #     ]
+        #     + history.root
+        # )
+        history.add_message(
+            role="system",
+            content=system_prompt,
+            flags=[MessageFlag.is_system_instruction],
+            index=0,
         )
-        logger.debug("History:\n" + new_history.model_dump_json(indent=2))
+        logger.debug("History:\n" + str(history.compact()))
 
-        return new_history
+        return history
 
     async def call_tool(self, action: CallToolRequestParams) -> str | None:
         """

@@ -8,7 +8,6 @@ from .types import (
     TERMINATE,
     AgentResponse,
     MaxAgentIterationsExceededError,
-    Message,
     OpenAiClientConfig,
 )
 from .utils import align_schema_with_tools
@@ -56,7 +55,7 @@ class LocalAgent[E: Environment, AR: AgentResponse]:
         self.message_separation_token = message_separation_token
         self.openai_client = openai_client
 
-    async def run(self) -> AsyncGenerator[AgentResponse, None]:
+    async def run(self) -> AsyncGenerator[AR, None]:
         """
         Run the agent loop for a given user query.
 
@@ -97,11 +96,27 @@ class LocalAgent[E: Environment, AR: AgentResponse]:
 
             # Agent Message Completion Hook via Environment
             assert response, "Agent failed to produce a response"
-            self.environment.history.root.append(
-                Message(
-                    role="assistant",
-                    content=response.model_dump_json(indent=2),
-                )
+            # self.environment.history.root.append(
+            #     Message(
+            #         role="assistant",
+            #         content=response.model_dump_json(
+            #             indent=2,
+            #             exclude_defaults=True,
+            #             exclude={"flags"},
+            #             exclude_none=True,
+            #             exclude_unset=True,
+            #         ),
+            #     )
+            # )
+            self.environment.history.add_message(
+                role="assistant",
+                content=response.model_dump_json(
+                    indent=2,
+                    exclude_defaults=True,
+                    exclude={"flags"},
+                    exclude_none=True,
+                    exclude_unset=True,
+                ),
             )
 
             # Environment handles tool execution and continuation decision
@@ -115,7 +130,7 @@ class LocalAgent[E: Environment, AR: AgentResponse]:
                 return
 
             # Add continuation message to history
-            self.environment.history.root.append(continuation_message)
+            self.environment.history.add_message(continuation_message)
 
         raise MaxAgentIterationsExceededError(
             f"Agent exceeded maximum iterations ({self.max_iterations})"

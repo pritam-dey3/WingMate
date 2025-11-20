@@ -44,7 +44,7 @@ async def stream_agent_response[T: BaseModel](
 
     async with client.responses.stream(
         model=client_config.llm_model_name,
-        input=history.model_dump(),
+        input=history.compact(),  # type: ignore
         text_format=schema,
         extra_body=client_config.extra_kw,
     ) as stream:
