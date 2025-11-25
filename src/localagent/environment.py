@@ -1,9 +1,9 @@
 import logging
 from abc import ABC, abstractmethod
-from typing import Awaitable, Callable
+from typing import Awaitable, Callable, Iterable
 
 from jinja2 import Template
-from mcp.types import Tool
+from pydantic import BaseModel
 
 from .history_utils import create_summary_entry, last_summary_index
 from .settings import settings
@@ -15,12 +15,13 @@ from .types import (
     Message,
     MessageFlag,
     OpenAiClientConfig,
+    TypedTool,
 )
 
 logger = logging.getLogger(__name__)
 
 
-class Environment(ABC):
+class Environment[T: type[BaseModel]](ABC):
     """Defines the environment in which the agent operates, including tools, context, and termination conditions."""
 
     history: History
@@ -51,41 +52,9 @@ class Environment(ABC):
         raise NotImplementedError()
 
     @abstractmethod
-    async def get_tools(self) -> list[Tool]:
+    async def get_tools(self) -> Iterable[TypedTool[T]]:
         """Return the list of tools available to the agent in this environment."""
         raise NotImplementedError()
-
-
-# Terminating action tools
-answer_tool = Tool(
-    name="answer",
-    description="Provide the final answer to the user's query based on the information gathered.",
-    inputSchema={
-        "type": "object",
-        "properties": {
-            "answer": {
-                "type": "string",
-                "description": "The final answer to the user's query.",
-            },
-        },
-        "required": ["answer"],
-    },
-)
-
-follow_up_tool = Tool(
-    name="follow_up",
-    description="Ask a follow-up question to gather more information from the user.",
-    inputSchema={
-        "type": "object",
-        "properties": {
-            "question": {
-                "type": "string",
-                "description": "The follow-up question to ask the user.",
-            },
-        },
-        "required": ["question"],
-    },
-)
 
 
 DEFAULT_SYSTEM_PROMPT_TEMPLATE = """You are a helpful AI agent with access to the following tools:
@@ -134,12 +103,21 @@ If you have, you must conclude by calling any one of the terminating tool(s): {{
 {% endif %}"""
 
 
-class DefaultEnvironment(Environment):
-    """Default environment implementation with standard behavior."""
+class DefaultEnvironment[T: type[BaseModel]](Environment):
+    """
+    Default environment implementation providing standard agent behavior.
+
+    This class manages the agent's context, tool execution, and conversation flow, including:
+    - Maintaining and summarizing conversation history
+    - Rendering system prompts with available tools and instructions
+    - Handling tool execution and termination logic
+    - Supporting both synchronous and asynchronous tool lists
+    - Integrating with OpenAI client configuration if provided
+    """
 
     def __init__(
         self,
-        tools: list[Tool] | Callable[[], Awaitable[list[Tool]]],
+        tools: list[TypedTool[T]] | Callable[[], Awaitable[list[TypedTool[T]]]],
         extra_instructions: Callable[[], str] | str | None = None,
         history: History | None = None,
         max_history_length: int | None = settings.max_history_length,
@@ -147,11 +125,15 @@ class DefaultEnvironment(Environment):
         openai_client: OpenAiClientConfig | None = None,
     ):
         """
-        Initialize the default environment.
+        Initialize a DefaultEnvironment instance.
 
         Args:
-            tools: List of tools available to the agent (answer and follow_up tools are added automatically).
-            extra_instructions: Additional instructions to append to the system prompt.
+            tools: List of available tools, or a callable returning a list of tools (can be async).
+            extra_instructions: Optional string or callable providing additional instructions for the system prompt.
+            history: Optional conversation history. If not provided, a new empty history is created.
+            max_history_length: Maximum number of history entries to keep before summarizing.
+            reduce_history_by: Number of entries to reduce when summarizing history.
+            openai_client: Optional OpenAI client configuration for summarization.
         """
         self.extra_instructions = extra_instructions
         self.system_prompt_template: Template = Template(DEFAULT_SYSTEM_PROMPT_TEMPLATE)
@@ -164,10 +146,18 @@ class DefaultEnvironment(Environment):
 
     async def get_context(self, remaining_iterations: int) -> History:
         """
-        Build context by prepending system prompt to history.
+        Build and return the conversation context for the agent.
 
-        Removes any existing system instruction and prepends a new one with
-        current tools and remaining iterations.
+        This method:
+            - Summarizes history if it exceeds the maximum length
+            - Removes any previous system instruction from the history
+            - Renders and prepends a new system prompt with the current tools, remaining iterations, and extra instructions
+
+        Args:
+            remaining_iterations: Number of iterations left for the agent to complete its task
+
+        Returns:
+            Updated History object with the new system prompt prepended
         """
 
         if (
@@ -209,16 +199,6 @@ class DefaultEnvironment(Environment):
         )
 
         # Prepend system prompt to history
-        # new_history = History.model_validate(
-        #     [
-        #         {
-        #             "role": "system",
-        #             "content": system_prompt,
-        #             "flags": [MessageFlag.is_system_instruction],
-        #         }
-        #     ]
-        #     + history.root
-        # )
         history.add_message(
             role="system",
             content=system_prompt,
@@ -231,13 +211,16 @@ class DefaultEnvironment(Environment):
 
     async def call_tool(self, action: CallToolRequestParams) -> str | None:
         """
-        Default implementation raises NotImplementedError.
+        Execute a tool action. (To be implemented by subclasses.)
 
-        Subclasses must override this to provide actual tool execution.
         Args:
-            action: The tool action to execute.
+            action: The tool action to execute (parameters and tool name).
+
         Returns:
-            The result of the tool execution. If the tool returns `None`, it indicates termination.
+            The result of the tool execution as a string, or None to indicate termination.
+
+        Raises:
+            NotImplementedError: This base implementation must be overridden in a subclass.
         """
         raise NotImplementedError(
             "DefaultEnvironment does not implement tool calling. "
@@ -248,12 +231,20 @@ class DefaultEnvironment(Environment):
         self, last_response: AgentResponse
     ) -> Message | TERMINATE:
         """
-        Default implementation that handles termination, tool execution, and continuation logic.
+        Handle the agent's response after each message is completed.
+
+        This method determines whether to terminate the conversation, execute a tool, or prompt the agent to continue:
+            - If no tool action was taken, prompts the agent to continue or terminate
+            - If a terminating tool was called, returns TERMINATE
+            - Otherwise, executes the requested tool and returns the result as a Message
+
+        Args:
+            last_response: The most recent agent response to evaluate
 
         Returns:
-            None if agent should terminate (answer/follow_up tools used).
-            Message with tool result if a tool was called.
-            Message with error if no action was taken.
+            TERMINATE if a terminating tool was called
+            Message with tool result if a tool was executed
+            Message prompting continuation if no action was taken
         """
         terminating_tools = [
             tool.name
@@ -287,6 +278,11 @@ class DefaultEnvironment(Environment):
             flags=[MessageFlag.is_tool_result],
         )
 
-    async def get_tools(self) -> list[Tool]:
-        """Return the list of tools available to the agent in this environment."""
+    async def get_tools(self) -> list[TypedTool[T]]:
+        """
+        Return the list of tools available to the agent in this environment.
+
+        Returns:
+            List of BaseTool objects (may be resolved from a callable or returned directly)
+        """
         return await self.tools() if callable(self.tools) else self.tools

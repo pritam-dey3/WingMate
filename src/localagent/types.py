@@ -2,6 +2,8 @@ import logging
 from enum import Enum
 from typing import Any, Literal, Self, overload
 
+from json_schema_to_pydantic import create_model as json_schema_to_pydantic_model
+from mcp.types import Tool
 from pydantic import BaseModel, ConfigDict, Field, RootModel, model_validator
 from pydantic.json_schema import SkipJsonSchema
 from typing_extensions import Sentinel
@@ -11,9 +13,9 @@ logger = logging.getLogger(__name__)
 TERMINATE = Sentinel("TERMINATE")
 
 
-class CallToolRequestParams(BaseModel):
+class CallToolRequestParams[T: BaseModel](BaseModel):
     tool_name: str
-    arguments: Any
+    arguments: T
 
 
 class LocalAgentError(Exception):
@@ -104,13 +106,18 @@ class History(RootModel[tuple[Message, ...]]):
         self.ensure_valid_ids(raise_warning=False)
 
 
-class AgentResponse(BaseModel):
+class AgentResponse[T: BaseModel](BaseModel):
     """Response for the given user query, including the agent's thought process"""
 
-    thought: str | None = None
     msg_to_user: str | None = None
-    action: CallToolRequestParams | None = None
+    action: CallToolRequestParams[T] | None = None
     turn_completed: SkipJsonSchema[bool] = False
+
+
+class AgentResponseThoughtful[T: BaseModel](AgentResponse[T]):
+    """Response for the given user query"""
+
+    thought: str | None = None
 
 
 class Token(BaseModel):
@@ -122,3 +129,37 @@ class OpenAiClientConfig(BaseModel):
     base_url: str
     api_key: str | None
     extra_kw: dict = {}
+
+
+class TypedTool[T: type[BaseModel]](Tool):
+    input_model: T
+
+    @model_validator(mode="before")
+    @classmethod
+    def validate_input_schema(cls, data: Any) -> Any:
+        if isinstance(data, dict):
+            input_model = data.get("input_model")
+            input_schema = data.get("inputSchema")
+
+            if input_model is None and input_schema is None:
+                raise ValueError("Either input_model or inputSchema must be provided.")
+            elif input_model is not None:
+                if input_schema is not None:
+                    logger.warning(
+                        "Ignoring inputSchema since input_model is provided."
+                    )
+                data["inputSchema"] = input_model.model_json_schema()
+            elif input_model is None:
+                assert input_schema is not None
+                data["input_model"] = json_schema_to_pydantic_model(input_schema)
+        return data
+
+
+class BaseTool(BaseModel):
+    @classmethod
+    def convert_to_tool(cls) -> TypedTool[type[Self]]:
+        return TypedTool(
+            name=f"{cls.__name__}_tool",
+            description=cls.__doc__ or "",
+            input_model=cls,
+        )  # type: ignore

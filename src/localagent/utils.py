@@ -1,25 +1,24 @@
-from typing import Literal, Union
+from typing import Iterable, Literal, Union, overload
 
-from json_schema_to_pydantic import create_model as create_model_from_json_schema
-from mcp.types import Tool
-from pydantic import Field, create_model
+from pydantic import BaseModel
 
-from .types import AgentResponse, CallToolRequestParams
+from .types import AgentResponse, AgentResponseThoughtful, TypedTool
 
 
-def align_schema_with_tools[T: type[AgentResponse]](schema: T, tools: list[Tool]) -> T:
-    actions = []
-    for tool in tools:
-        model = create_model(
-            tool.name + "InputModel",
-            tool_name=(Literal[tool.name], Field(default=tool.name)),
-            arguments=(create_model_from_json_schema(tool.inputSchema), Field(...)),
-            __base__=CallToolRequestParams,
-        )
-        actions.append(model)
-
-    return create_model(
-        schema.__name__,
-        action=(Union[tuple(actions) + (type(None),)], Field(default=None)),
-        __base__=schema,
-    )
+@overload
+def build_agent_response_schema[T: BaseModel](
+    disable_thought: Literal[True], tools: Iterable[TypedTool[type[T]]]
+) -> type[AgentResponse[T]]: ...
+@overload
+def build_agent_response_schema[T: BaseModel](
+    disable_thought: Literal[False], tools: Iterable[TypedTool[type[T]]]
+) -> type[AgentResponseThoughtful[T]]: ...
+def build_agent_response_schema[T: BaseModel](
+    disable_thought: bool, tools: Iterable[TypedTool[type[T]]]
+) -> type[AgentResponse[T] | AgentResponseThoughtful[T]]:
+    if disable_thought:
+        return AgentResponse[Union[*tuple(tool.input_model for tool in tools)]]
+    else:
+        return AgentResponseThoughtful[
+            Union[*tuple(tool.input_model for tool in tools)]
+        ]
