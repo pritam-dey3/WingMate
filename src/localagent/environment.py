@@ -21,7 +21,7 @@ from .types import (
 logger = logging.getLogger(__name__)
 
 
-class Environment[T: type[BaseModel]](ABC):
+class Environment[T: BaseModel](ABC):
     """Defines the environment in which the agent operates, including tools, context, and termination conditions."""
 
     history: History
@@ -52,7 +52,7 @@ class Environment[T: type[BaseModel]](ABC):
         raise NotImplementedError()
 
     @abstractmethod
-    async def get_tools(self) -> Iterable[TypedTool[T]]:
+    async def get_tools(self) -> Iterable[TypedTool[type[T]]]:
         """Return the list of tools available to the agent in this environment."""
         raise NotImplementedError()
 
@@ -103,7 +103,7 @@ If you have, you must conclude by calling any one of the terminating tool(s): {{
 {% endif %}"""
 
 
-class DefaultEnvironment[T: type[BaseModel]](Environment):
+class DefaultEnvironment[T: BaseModel](Environment[T]):
     """
     Default environment implementation providing standard agent behavior.
 
@@ -117,7 +117,8 @@ class DefaultEnvironment[T: type[BaseModel]](Environment):
 
     def __init__(
         self,
-        tools: list[TypedTool[T]] | Callable[[], Awaitable[list[TypedTool[T]]]],
+        tools: list[TypedTool[type[T]]]
+        | Callable[[], Awaitable[list[TypedTool[type[T]]]]],
         extra_instructions: Callable[[], str] | str | None = None,
         history: History | None = None,
         max_history_length: int | None = settings.max_history_length,
@@ -142,7 +143,7 @@ class DefaultEnvironment[T: type[BaseModel]](Environment):
         self.max_history_length = max_history_length
         self.reduce_history_by = reduce_history_by
         self.openai_client = openai_client
-        self.tools = tools
+        self.provided_tools = tools
 
     async def get_context(self, remaining_iterations: int) -> History:
         """
@@ -278,11 +279,15 @@ class DefaultEnvironment[T: type[BaseModel]](Environment):
             flags=[MessageFlag.is_tool_result],
         )
 
-    async def get_tools(self) -> list[TypedTool[T]]:
+    async def get_tools(self) -> list[TypedTool[type[T]]]:
         """
         Return the list of tools available to the agent in this environment.
 
         Returns:
             List of BaseTool objects (may be resolved from a callable or returned directly)
         """
-        return await self.tools() if callable(self.tools) else self.tools
+        return (
+            await self.provided_tools()
+            if callable(self.provided_tools)
+            else self.provided_tools
+        )

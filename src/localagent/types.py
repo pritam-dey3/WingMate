@@ -1,6 +1,6 @@
 import logging
 from enum import Enum
-from typing import Any, Literal, Self, overload
+from typing import Any, Generic, Literal, Self, TypeVar, overload
 
 from json_schema_to_pydantic import create_model as json_schema_to_pydantic_model
 from mcp.types import Tool
@@ -131,8 +131,12 @@ class OpenAiClientConfig(BaseModel):
     extra_kw: dict = {}
 
 
-class TypedTool[T: type[BaseModel]](Tool):
-    input_model: T
+T_co = TypeVar("T_co", bound=type[BaseModel], covariant=True)
+
+
+class TypedTool(Tool, Generic[T_co]):
+    model_config = ConfigDict(frozen=True)
+    input_model: T_co
 
     @model_validator(mode="before")
     @classmethod

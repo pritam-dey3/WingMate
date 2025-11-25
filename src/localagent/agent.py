@@ -1,4 +1,7 @@
+from __future__ import annotations
+
 import logging
+from typing import AsyncGenerator, Literal, overload
 
 from pydantic import BaseModel
 
@@ -7,6 +10,8 @@ from .llm import stream_agent_response
 from .settings import settings
 from .types import (
     TERMINATE,
+    AgentResponse,
+    AgentResponseThoughtful,
     MaxAgentIterationsExceededError,
     OpenAiClientConfig,
 )
@@ -15,14 +20,44 @@ from .utils import build_agent_response_schema
 logger = logging.getLogger(__name__)
 
 
-class LocalAgent[T: BaseModel]:
+class LocalAgent[T: BaseModel, R: AgentResponse | AgentResponseThoughtful]:
     """
     An agent that orchestrates LLM interactions with tool calling capabilities.
     """
 
+    @overload
+    def __new__(
+        cls,
+        environment: Environment[T],
+        disable_thought: Literal[True] = True,
+        max_iterations: int = settings.max_agent_iterations,
+        message_separation_token: str = "\n\n",
+        openai_client: OpenAiClientConfig | None = None,
+    ) -> LocalAgent[T, AgentResponse[T]]: ...
+
+    @overload
+    def __new__(
+        cls,
+        environment: Environment[T],
+        disable_thought: Literal[False],
+        max_iterations: int = settings.max_agent_iterations,
+        message_separation_token: str = "\n\n",
+        openai_client: OpenAiClientConfig | None = None,
+    ) -> LocalAgent[T, AgentResponseThoughtful[T]]: ...
+
+    def __new__(  # type: ignore
+        cls,
+        environment: Environment[T],
+        disable_thought: bool = True,
+        max_iterations: int = settings.max_agent_iterations,
+        message_separation_token: str = "\n\n",
+        openai_client: OpenAiClientConfig | None = None,
+    ):
+        return super().__new__(cls)
+
     def __init__(
         self,
-        environment: Environment[type[T]],
+        environment: Environment[T],
         disable_thought: bool = True,
         max_iterations: int = settings.max_agent_iterations,
         message_separation_token: str = "\n\n",
@@ -46,7 +81,7 @@ class LocalAgent[T: BaseModel]:
         self.message_separation_token = message_separation_token
         self.openai_client = openai_client
 
-    async def run(self):
+    async def run(self) -> AsyncGenerator[R, None]:
         """
         Run the agent loop for a given user query.
 
@@ -100,7 +135,7 @@ class LocalAgent[T: BaseModel]:
 
             # Environment handles tool execution and continuation decision
             response.turn_completed = True
-            yield response
+            yield response  # type: ignore
             continuation_message = await self.environment.on_agent_message_completed(
                 response
             )
