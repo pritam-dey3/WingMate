@@ -5,6 +5,7 @@ from typing import Any, Generic, Literal, Self, TypeVar, overload
 from json_schema_to_pydantic import create_model as json_schema_to_pydantic_model
 from mcp.types import Tool
 from pydantic import BaseModel, ConfigDict, Field, RootModel, model_validator
+from pydantic._internal._model_construction import ModelMetaclass
 from pydantic.json_schema import SkipJsonSchema
 from typing_extensions import Sentinel
 
@@ -136,7 +137,7 @@ T_co = TypeVar("T_co", bound=type[BaseModel], covariant=True)
 
 class TypedTool(Tool, Generic[T_co]):
     model_config = ConfigDict(frozen=True)
-    input_model: T_co
+    input_model: SkipJsonSchema[T_co] = Field(exclude=True)
 
     @model_validator(mode="before")
     @classmethod
@@ -155,15 +156,43 @@ class TypedTool(Tool, Generic[T_co]):
                 data["inputSchema"] = input_model.model_json_schema()
             elif input_model is None:
                 assert input_schema is not None
-                data["input_model"] = json_schema_to_pydantic_model(input_schema)
+                data["input_model"] = json_schema_to_pydantic_model(
+                    input_schema, base_model_type=BaseToolModel
+                )
+
+            if (
+                "meta" in data
+                and data["meta"]
+                and ("localagent" in data["meta"])
+                and ("TERMINATING" in data["meta"]["localagent"])
+            ):
+                data["input_model"].__is_terminating__ = True
+
         return data
 
 
-class BaseTool(BaseModel):
+class BaseToolMeta(ModelMetaclass):
+    __is_terminating__: bool = False
+
+    def __new__(mcls, name, bases, attrs, **kwargs):
+        terminating = kwargs.pop("terminating", False)
+        cls = super().__new__(mcls, name, bases, attrs, **kwargs)
+        if terminating:
+            cls.__is_terminating__ = True
+        return cls
+
+
+class BaseToolModel(BaseModel, metaclass=BaseToolMeta):
     @classmethod
     def convert_to_tool(cls) -> TypedTool[type[Self]]:
-        return TypedTool(
-            name=f"{cls.__name__}_tool",
+        if cls.__is_terminating__:
+            meta = {"localagent": ["TERMINATING"]}
+        else:
+            meta = {}
+        tool = TypedTool(
+            name=cls.__name__,
             description=cls.__doc__ or "",
             input_model=cls,
+            _meta=meta,
         )  # type: ignore
+        return tool

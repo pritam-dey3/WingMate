@@ -1,7 +1,8 @@
 from .agent import LocalAgent
-from .environment import DefaultEnvironment, Environment, answer_tool, follow_up_tool
+from .environment import DefaultEnvironment, Environment
 from .types import (
     AgentResponse,
+    BaseToolModel,
     CallToolRequestParams,
     History,
     LocalAgentError,
@@ -9,6 +10,7 @@ from .types import (
     Message,
     MessageFlag,
     Token,
+    TypedTool,
 )
 
 __all__ = [
@@ -25,8 +27,8 @@ __all__ = [
     # environment
     "Environment",
     "DefaultEnvironment",
-    "answer_tool",
-    "follow_up_tool",
+    "TypedTool",
+    "BaseToolModel",
 ]
 
 

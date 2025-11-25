@@ -46,12 +46,7 @@ class LocalAgent[T: BaseModel, R: AgentResponse | AgentResponseThoughtful]:
     ) -> LocalAgent[T, AgentResponseThoughtful[T]]: ...
 
     def __new__(  # type: ignore
-        cls,
-        environment: Environment[T],
-        disable_thought: bool = True,
-        max_iterations: int = settings.max_agent_iterations,
-        message_separation_token: str = "\n\n",
-        openai_client: OpenAiClientConfig | None = None,
+        cls, *args, **kwargs
     ):
         return super().__new__(cls)
 
@@ -118,7 +113,7 @@ class LocalAgent[T: BaseModel, R: AgentResponse | AgentResponseThoughtful]:
             async for response in stream_agent_response(
                 context, schema, self.openai_client
             ):
-                yield response
+                yield response  # type: ignore
 
             # Agent Message Completion Hook via Environment
             assert response, "Agent failed to produce a response"
@@ -142,6 +137,7 @@ class LocalAgent[T: BaseModel, R: AgentResponse | AgentResponseThoughtful]:
 
             if continuation_message is TERMINATE:
                 return
+            print("Continuation Message:", continuation_message)
 
             # Add continuation message to history
             self.environment.history.add_message(continuation_message)
