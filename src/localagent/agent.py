@@ -137,7 +137,7 @@ class LocalAgent[T: BaseModel, R: AgentResponse | AgentResponseThoughtful]:
 
             if continuation_message is TERMINATE:
                 return
-            print("Continuation Message:", continuation_message)
+            logger.debug("Continuation Message:", continuation_message)
 
             # Add continuation message to history
             self.environment.history.add_message(continuation_message)
