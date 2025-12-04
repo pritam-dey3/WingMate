@@ -45,7 +45,6 @@ async def stream_agent_response[T: BaseModel](
         extra_body=client_config.extra_kw,
     ) as stream:
         async for event in stream:
-            print(event)
             if (
                 event.type == "response.output_text.delta"
                 or event.type == "response.refusal.delta"
