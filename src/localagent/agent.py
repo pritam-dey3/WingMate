@@ -1,5 +1,9 @@
+from __future__ import annotations
+
 import logging
-from typing import AsyncGenerator, Type
+from typing import AsyncGenerator, Literal, overload
+
+from pydantic import BaseModel
 
 from .environment import Environment
 from .llm import stream_agent_response
@@ -7,23 +11,49 @@ from .settings import settings
 from .types import (
     TERMINATE,
     AgentResponse,
+    AgentResponseThoughtful,
     MaxAgentIterationsExceededError,
     OpenAiClientConfig,
 )
-from .utils import align_schema_with_tools
+from .utils import build_agent_response_schema
 
 logger = logging.getLogger(__name__)
 
 
-class LocalAgent[E: Environment, AR: AgentResponse]:
+class LocalAgent[T: BaseModel, R: AgentResponse | AgentResponseThoughtful]:
     """
     An agent that orchestrates LLM interactions with tool calling capabilities.
     """
 
+    @overload
+    def __new__(
+        cls,
+        environment: Environment[T],
+        disable_thought: Literal[True] = True,
+        max_iterations: int = settings.max_agent_iterations,
+        message_separation_token: str = "\n\n",
+        openai_client: OpenAiClientConfig | None = None,
+    ) -> LocalAgent[T, AgentResponse[T]]: ...
+
+    @overload
+    def __new__(
+        cls,
+        environment: Environment[T],
+        disable_thought: Literal[False],
+        max_iterations: int = settings.max_agent_iterations,
+        message_separation_token: str = "\n\n",
+        openai_client: OpenAiClientConfig | None = None,
+    ) -> LocalAgent[T, AgentResponseThoughtful[T]]: ...
+
+    def __new__(  # type: ignore
+        cls, *args, **kwargs
+    ):
+        return super().__new__(cls)
+
     def __init__(
         self,
-        environment: E,
-        response_schema: Type[AR] = AgentResponse,
+        environment: Environment[T],
+        disable_thought: bool = True,
         max_iterations: int = settings.max_agent_iterations,
         message_separation_token: str = "\n\n",
         openai_client: OpenAiClientConfig | None = None,
@@ -41,21 +71,12 @@ class LocalAgent[E: Environment, AR: AgentResponse]:
             openai_client: Optional AsyncOpenAI client for LLM interactions. If not provided, a default client will be created using the config provided in `local-agent-config.yaml`.
         """
         self.environment = environment
-        missing_keys = [
-            key
-            for key in ["msg_to_user", "action"]
-            if key not in response_schema.model_fields.keys()
-        ]
-        if missing_keys:
-            raise ValueError(
-                f"response_schema is missing required keys: {missing_keys}"
-            )
-        self.agent_response_schema = response_schema
+        self.disable_thought = disable_thought
         self.max_iterations = max_iterations
         self.message_separation_token = message_separation_token
         self.openai_client = openai_client
 
-    async def run(self) -> AsyncGenerator[AR, None]:
+    async def run(self) -> AsyncGenerator[R, None]:
         """
         Run the agent loop for a given user query.
 
@@ -85,29 +106,17 @@ class LocalAgent[E: Environment, AR: AgentResponse]:
             )
 
             response = None
-            schema = align_schema_with_tools(
-                schema=self.agent_response_schema,
+            schema = build_agent_response_schema(
+                disable_thought=self.disable_thought,
                 tools=await self.environment.get_tools(),
             )
             async for response in stream_agent_response(
                 context, schema, self.openai_client
             ):
-                yield response
+                yield response  # type: ignore
 
             # Agent Message Completion Hook via Environment
             assert response, "Agent failed to produce a response"
-            # self.environment.history.root.append(
-            #     Message(
-            #         role="assistant",
-            #         content=response.model_dump_json(
-            #             indent=2,
-            #             exclude_defaults=True,
-            #             exclude={"flags"},
-            #             exclude_none=True,
-            #             exclude_unset=True,
-            #         ),
-            #     )
-            # )
             self.environment.history.add_message(
                 role="assistant",
                 content=response.model_dump_json(
@@ -121,13 +130,14 @@ class LocalAgent[E: Environment, AR: AgentResponse]:
 
             # Environment handles tool execution and continuation decision
             response.turn_completed = True
-            yield response
+            yield response  # type: ignore
             continuation_message = await self.environment.on_agent_message_completed(
                 response
             )
 
             if continuation_message is TERMINATE:
                 return
+            print("Continuation Message:", continuation_message)
 
             # Add continuation message to history
             self.environment.history.add_message(continuation_message)
@@ -136,7 +146,7 @@ class LocalAgent[E: Environment, AR: AgentResponse]:
             f"Agent exceeded maximum iterations ({self.max_iterations})"
         )
 
-    async def stream_text(self) -> AsyncGenerator[str, None]:
+    async def stream_text(self):
         """
         Stream the agent's responses as plain text for a given user query.
 

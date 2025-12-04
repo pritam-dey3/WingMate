@@ -1,5 +1,4 @@
 import logging
-from typing import AsyncGenerator, Type
 
 from openai import AsyncOpenAI
 from partialjson.json_parser import JSONParser
@@ -15,9 +14,9 @@ parser = JSONParser(strict=False)
 
 async def stream_agent_response[T: BaseModel](
     history: History,
-    schema: Type[T],
+    schema: type[T],
     client_config: OpenAiClientConfig | None = None,
-) -> AsyncGenerator[T, None]:
+):
     if client_config is None:
         assert settings.llm_model_name is not None, (
             "llm_model_name must be set in `local-agent-config.yaml`"
@@ -35,9 +34,6 @@ async def stream_agent_response[T: BaseModel](
         base_url=client_config.base_url,
         api_key=client_config.api_key,
     )
-    # logger.info(
-    #     "Schema to openai:\n" + json.dumps(schema.model_json_schema(), indent=2)
-    # )
 
     content = ""
     last_yielded = schema()
@@ -49,6 +45,7 @@ async def stream_agent_response[T: BaseModel](
         extra_body=client_config.extra_kw,
     ) as stream:
         async for event in stream:
+            print(event)
             if (
                 event.type == "response.output_text.delta"
                 or event.type == "response.refusal.delta"
@@ -66,7 +63,7 @@ async def stream_agent_response[T: BaseModel](
 
 async def structured_agent_response[T](
     history: History,
-    schema: Type[T],
+    schema: type[T],
     client_config: OpenAiClientConfig | None = None,
 ) -> T:
     if client_config is None:
