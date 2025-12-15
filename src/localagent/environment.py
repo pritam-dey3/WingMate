@@ -225,7 +225,7 @@ class DefaultEnvironment[T: BaseModel](Environment[T]):
         """
         raise NotImplementedError(
             "DefaultEnvironment does not implement tool calling. "
-            "Subclass and override call_tool() or use a concrete environment implementation."
+            "Subclass and override call_tool() to provide tool execution logic."
         )
 
     async def on_agent_message_completed(
