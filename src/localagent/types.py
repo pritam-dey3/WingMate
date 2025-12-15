@@ -170,6 +170,10 @@ class TypedTool(Tool, Generic[T_co]):
 
         return data
 
+    @classmethod
+    def from_tool(cls, tool: Tool):
+        return cls.model_validate(tool.model_dump())
+
 
 class BaseToolMeta(ModelMetaclass):
     __is_terminating__: bool = False
@@ -196,3 +200,13 @@ class BaseToolModel(BaseModel, metaclass=BaseToolMeta):
             _meta=meta,
         )  # type: ignore
         return tool
+
+
+class TextStream(BaseModel):
+    type: Literal["text"] = "text"
+    delta: str
+
+
+class ToolCallStream[T: BaseModel](BaseModel):
+    type: Literal["tool_call"] = "tool_call"
+    tool_call: CallToolRequestParams[T]
