@@ -201,6 +201,6 @@ class LocalAgent[T: BaseToolModel, R: AgentResponse | AgentResponseThoughtful]:
                     prev_content = response.msg_to_user
                     yield TextStream(delta=new_content)
             else:
-                raise ValueError(
-                    "Streamed response is inconsistent: new content does not start with previous content."
-                )
+                yield TextStream(delta=self.message_separation_token)
+                prev_content = response.msg_to_user
+                yield TextStream(delta=response.msg_to_user)
