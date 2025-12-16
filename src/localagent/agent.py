@@ -201,6 +201,6 @@ class LocalAgent[T: BaseToolModel, R: AgentResponse | AgentResponseThoughtful]:
                     prev_content = response.msg_to_user
                     yield TextStream(delta=new_content)
             else:
-                yield TextStream(delta=self.message_separation_token)
-                prev_content = response.msg_to_user
-                yield TextStream(delta=response.msg_to_user)
+                ValueError(
+                    "Agent response content is not a valid continuation of previous content."
+                )
