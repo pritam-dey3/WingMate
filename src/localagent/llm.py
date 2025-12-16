@@ -9,7 +9,7 @@ from .types import History, OpenAiClientConfig
 
 logger = logging.getLogger(__name__)
 
-parser = JSONParser(strict=False)
+parser = JSONParser()
 
 
 async def stream_agent_response[T: BaseModel](
