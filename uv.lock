@@ -610,39 +610,6 @@ wheels = [
 ]
 
 [[package]]
-name = "localagent"
-version = "0.2.0"
-source = { editable = "." }
-dependencies = [
-    { name = "fastmcp" },
-    { name = "jinja2" },
-    { name = "json-schema-to-pydantic" },
-    { name = "openai" },
-    { name = "partialjson" },
-    { name = "pydantic" },
-    { name = "pydantic-settings" },
-]
-
-[package.dev-dependencies]
-dev = [
-    { name = "pre-commit" },
-]
-
-[package.metadata]
-requires-dist = [
-    { name = "fastmcp", specifier = ">=2.13.0.2" },
-    { name = "jinja2", specifier = ">=3.1.6" },
-    { name = "json-schema-to-pydantic", specifier = ">=0.4.7" },
-    { name = "openai", specifier = ">=2.6.0" },
-    { name = "partialjson", specifier = ">=1.0.0" },
-    { name = "pydantic", specifier = ">=2.12.3" },
-    { name = "pydantic-settings", specifier = ">=2.11.0" },
-]
-
-[package.metadata.requires-dev]
-dev = [{ name = "pre-commit", specifier = ">=4.2.0" }]
-
-[[package]]
 name = "markdown-it-py"
 version = "4.0.0"
 source = { registry = "https://pypi.org/simple" }
@@ -1316,3 +1283,36 @@ wheels = [
     { url = "https://files.pythonhosted.org/packages/1b/6c/c65773d6cab416a64d191d6ee8a8b1c68a09970ea6909d16965d26bfed1e/websockets-15.0.1-cp313-cp313-win_amd64.whl", hash = "sha256:e09473f095a819042ecb2ab9465aee615bd9c2028e4ef7d933600a8401c79561", size = 176837, upload-time = "2025-03-05T20:02:55.237Z" },
     { url = "https://files.pythonhosted.org/packages/fa/a8/5b41e0da817d64113292ab1f8247140aac61cbf6cfd085d6a0fa77f4984f/websockets-15.0.1-py3-none-any.whl", hash = "sha256:f7a866fbc1e97b5c617ee4116daaa09b722101d4a3c170c787450ba409f9736f", size = 169743, upload-time = "2025-03-05T20:03:39.41Z" },
 ]
+
+[[package]]
+name = "wingmate"
+version = "0.2.0"
+source = { editable = "." }
+dependencies = [
+    { name = "fastmcp" },
+    { name = "jinja2" },
+    { name = "json-schema-to-pydantic" },
+    { name = "openai" },
+    { name = "partialjson" },
+    { name = "pydantic" },
+    { name = "pydantic-settings" },
+]
+
+[package.dev-dependencies]
+dev = [
+    { name = "pre-commit" },
+]
+
+[package.metadata]
+requires-dist = [
+    { name = "fastmcp", specifier = ">=2.13.0.2" },
+    { name = "jinja2", specifier = ">=3.1.6" },
+    { name = "json-schema-to-pydantic", specifier = ">=0.4.7" },
+    { name = "openai", specifier = ">=2.6.0" },
+    { name = "partialjson", specifier = ">=1.0.0" },
+    { name = "pydantic", specifier = ">=2.12.3" },
+    { name = "pydantic-settings", specifier = ">=2.11.0" },
+]
+
+[package.metadata.requires-dev]
+dev = [{ name = "pre-commit", specifier = ">=4.2.0" }]

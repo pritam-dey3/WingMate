@@ -186,8 +186,8 @@ class DefaultEnvironment[T: BaseModel](Environment[T]):
             for tool in tools
             if (
                 tool.meta
-                and "localagent" in tool.meta
-                and "TERMINATING" in tool.meta["localagent"]
+                and "wingmate" in tool.meta
+                and "TERMINATING" in tool.meta["wingmate"]
             )
         ]
         system_prompt = self.system_prompt_template.render(
@@ -252,8 +252,8 @@ class DefaultEnvironment[T: BaseModel](Environment[T]):
             for tool in await self.get_tools()
             if (
                 tool.meta
-                and "localagent" in tool.meta
-                and "TERMINATING" in tool.meta["localagent"]
+                and "wingmate" in tool.meta
+                and "TERMINATING" in tool.meta["wingmate"]
             )
         ]
         # Error if no action was taken

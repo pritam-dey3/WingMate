@@ -21,7 +21,7 @@ from .utils import build_agent_response_schema
 logger = logging.getLogger(__name__)
 
 
-class LocalAgent[T: BaseToolModel, R: AgentResponse | AgentResponseThoughtful]:
+class Wingmate[T: BaseToolModel, R: AgentResponse | AgentResponseThoughtful]:
     """
     An agent that orchestrates LLM interactions with tool calling capabilities.
     """
@@ -35,7 +35,7 @@ class LocalAgent[T: BaseToolModel, R: AgentResponse | AgentResponseThoughtful]:
         message_separation_token: str = "\n\n",
         openai_client: OpenAiClientConfig | None = None,
         require_terminating_tool_call: bool = False,
-    ) -> LocalAgent[T, AgentResponse[T]]: ...
+    ) -> Wingmate[T, AgentResponse[T]]: ...
 
     @overload
     def __new__(
@@ -46,7 +46,7 @@ class LocalAgent[T: BaseToolModel, R: AgentResponse | AgentResponseThoughtful]:
         message_separation_token: str = "\n\n",
         openai_client: OpenAiClientConfig | None = None,
         require_terminating_tool_call: bool = False,
-    ) -> LocalAgent[T, AgentResponseThoughtful[T]]: ...
+    ) -> Wingmate[T, AgentResponseThoughtful[T]]: ...
 
     def __new__(  # type: ignore
         cls, *args, **kwargs
@@ -63,7 +63,7 @@ class LocalAgent[T: BaseToolModel, R: AgentResponse | AgentResponseThoughtful]:
         require_terminating_tool_call: bool = False,
     ):
         """
-        Initialize the LocalAgent.
+        Initialize the Wingmate.
 
         Args:
             environment: Environment instance that defines tools, context engineering,
@@ -73,7 +73,7 @@ class LocalAgent[T: BaseToolModel, R: AgentResponse | AgentResponseThoughtful]:
                 Defaults to settings.max_agent_iterations.
             message_separation_token: Token used to separate messages when streaming responses.
                 Defaults to "\n\n".
-            openai_client: Optional AsyncOpenAI client for LLM interactions. If not provided, a default client will be created using the config provided in `local-agent-config.yaml`.
+            openai_client: Optional AsyncOpenAI client for LLM interactions. If not provided, a default client will be created using the config provided in `wingmate-config.yaml`.
             require_terminating_tool_call: If True, the agent will not terminate unless explicitly told to do so by the environment. If False, the agent will terminate if no tool calls are made in a turn.
         """
         self.environment = environment

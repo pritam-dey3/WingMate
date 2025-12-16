@@ -18,7 +18,7 @@ class Settings(BaseSettings):
     reduce_history_by: int = 7
 
     model_config = SettingsConfigDict(
-        yaml_file="local-agent-config.yaml",
+        yaml_file="wingmate-config.yaml",
         yaml_file_encoding="utf-8",
         env_file=".env",
         env_file_encoding="utf-8",

@@ -2,12 +2,12 @@ import asyncio
 
 from fastmcp import Client, FastMCP
 
-from localagent import DefaultEnvironment, LocalAgent
-from localagent.types import BaseToolModel, CallToolRequestParams
-from localagent.utils import mcp_tools
+from wingmate import DefaultEnvironment, Wingmate
+from wingmate.types import BaseToolModel, CallToolRequestParams
+from wingmate.utils import mcp_tools
 
 ## Define the tools for date calculations
-## LocalAgent supports any MCP servers
+## Wingmate supports any MCP servers
 mcp = FastMCP()
 
 
@@ -46,18 +46,19 @@ class SimpleEnvironment[T: BaseToolModel](DefaultEnvironment[T]):
 
 
 env = SimpleEnvironment(tools=mcp_tools(client))
-agent = LocalAgent(
+agent = Wingmate(
     environment=env, disable_thought=True, require_terminating_tool_call=False
 )
 
 
-async def main():
-    user_query = input("Query: ")
+async def main(query: str | None = None):
+    if not query:
+        query = input("Query: ")
     # Add user query to history
-    agent.environment.history.add_message(role="user", content=user_query)
+    agent.environment.history.add_message(role="user", content=query)
     async for event in agent.stream():
         print(event.model_dump_json(indent=2))
         print("------------")
 
 
-asyncio.run(main())
+asyncio.run(main(query="What day of the week is September 2, 2026?"))
