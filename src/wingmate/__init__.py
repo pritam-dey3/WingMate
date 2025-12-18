@@ -1,4 +1,4 @@
-from .agent import Wingmate
+from .agent import Agent
 from .environment import DefaultEnvironment, Environment
 from .types import (
     AgentResponse,
@@ -23,7 +23,7 @@ __all__ = [
     "MessageFlag",
     "Token",
     # agent
-    "Wingmate",
+    "Agent",
     # environment
     "Environment",
     "DefaultEnvironment",

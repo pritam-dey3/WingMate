@@ -2,7 +2,7 @@ import asyncio
 
 from fastmcp import Client, FastMCP
 
-from wingmate import DefaultEnvironment, Wingmate
+from wingmate import Agent, DefaultEnvironment
 from wingmate.types import BaseToolModel, CallToolRequestParams
 from wingmate.utils import mcp_tools
 
@@ -46,7 +46,7 @@ class SimpleEnvironment[T: BaseToolModel](DefaultEnvironment[T]):
 
 
 env = SimpleEnvironment(tools=mcp_tools(client))
-agent = Wingmate(
+agent = Agent(
     environment=env, disable_thought=True, require_terminating_tool_call=False
 )
 

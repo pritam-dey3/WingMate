@@ -18,7 +18,7 @@ Wingmate is a lightweight, flexible Python framework for building and orchestrat
 You can install Wingmate directly from GitHub:
 
 ```bash
-pip install git+https://github.com/pritam-dey3/Wingmate.git
+pip install wingmate
 ```
 
 ## Quick Start

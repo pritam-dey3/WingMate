@@ -21,7 +21,7 @@ from .utils import build_agent_response_schema
 logger = logging.getLogger(__name__)
 
 
-class Wingmate[T: BaseToolModel, R: AgentResponse | AgentResponseThoughtful]:
+class Agent[T: BaseToolModel, R: AgentResponse | AgentResponseThoughtful]:
     """
     An agent that orchestrates LLM interactions with tool calling capabilities.
     """
@@ -35,7 +35,7 @@ class Wingmate[T: BaseToolModel, R: AgentResponse | AgentResponseThoughtful]:
         message_separation_token: str = "\n\n",
         openai_client: OpenAiClientConfig | None = None,
         require_terminating_tool_call: bool = False,
-    ) -> Wingmate[T, AgentResponse[T]]: ...
+    ) -> Agent[T, AgentResponse[T]]: ...
 
     @overload
     def __new__(
@@ -46,7 +46,7 @@ class Wingmate[T: BaseToolModel, R: AgentResponse | AgentResponseThoughtful]:
         message_separation_token: str = "\n\n",
         openai_client: OpenAiClientConfig | None = None,
         require_terminating_tool_call: bool = False,
-    ) -> Wingmate[T, AgentResponseThoughtful[T]]: ...
+    ) -> Agent[T, AgentResponseThoughtful[T]]: ...
 
     def __new__(  # type: ignore
         cls, *args, **kwargs
