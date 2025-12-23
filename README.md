@@ -1,9 +1,8 @@
-# Wingmate
+# WingMate
 
 **Orchestrate AI agents locally with ease.**
 
-Wingmate is a lightweight, flexible Python framework for building and orchestrating AI agents. It is designed to run locally, with a tool definition system closely aligned with the [Model Context Protocol (MCP)](https://modelcontextprotocol.io/), making it very simple to integrate MCP servers.
-
+WingMate is a lightweight, flexible Python framework for building and orchestrating AI agents. It is designed to run locally, with a tool definition system closely aligned with the [Model Context Protocol (MCP)](https://modelcontextprotocol.io/), making it very simple to integrate MCP servers.
 ## Features
 
 - **Local-First**: Designed to run agents in your local environment.
@@ -32,7 +31,7 @@ Create a file named `main.py`:
 ```python
 import asyncio
 from fastmcp import Client, FastMCP
-from wingmate import DefaultEnvironment, Wingmate
+from wingmate import DefaultEnvironment, Agent
 from wingmate.types import BaseToolModel, CallToolRequestParams
 from wingmate.utils import mcp_tools
 
@@ -66,7 +65,7 @@ async def main():
     env = SimpleEnvironment(tools=mcp_tools(client))
 
     # Create the agent
-    agent = Wingmate(
+    agent = Agent(
         environment=env,
         disable_thought=False  # Set to False to see the agent's thinking process
     )
