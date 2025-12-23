@@ -1,29 +1,29 @@
-from .agent import LocalAgent
+from .agent import Agent
 from .environment import DefaultEnvironment, Environment
 from .types import (
     AgentResponse,
     BaseToolModel,
     CallToolRequestParams,
     History,
-    LocalAgentError,
     MaxAgentIterationsExceededError,
     Message,
     MessageFlag,
     Token,
     TypedTool,
+    WingmateError,
 )
 
 __all__ = [
     "AgentResponse",
     "CallToolRequestParams",
     "History",
-    "LocalAgentError",
+    "WingmateError",
     "MaxAgentIterationsExceededError",
     "Message",
     "MessageFlag",
     "Token",
     # agent
-    "LocalAgent",
+    "Agent",
     # environment
     "Environment",
     "DefaultEnvironment",
@@ -33,4 +33,4 @@ __all__ = [
 
 
 def main() -> None:
-    print("Hello from localagent!")
+    print("Hello from wingmate!")

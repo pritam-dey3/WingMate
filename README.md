@@ -1,8 +1,8 @@
-# LocalAgent
+# Wingmate
 
 **Orchestrate AI agents locally with ease.**
 
-LocalAgent is a lightweight, flexible Python framework for building and orchestrating AI agents. It is designed to run locally, with a tool definition system closely aligned with the [Model Context Protocol (MCP)](https://modelcontextprotocol.io/), making it very simple to integrate MCP servers.
+Wingmate is a lightweight, flexible Python framework for building and orchestrating AI agents. It is designed to run locally, with a tool definition system closely aligned with the [Model Context Protocol (MCP)](https://modelcontextprotocol.io/), making it very simple to integrate MCP servers.
 
 ## Features
 
@@ -15,10 +15,10 @@ LocalAgent is a lightweight, flexible Python framework for building and orchestr
 
 ## Installation
 
-You can install LocalAgent directly from GitHub:
+You can install Wingmate directly from GitHub:
 
 ```bash
-pip install git+https://github.com/pritam-dey3/LocalAgent.git
+pip install wingmate
 ```
 
 ## Quick Start
@@ -32,9 +32,9 @@ Create a file named `main.py`:
 ```python
 import asyncio
 from fastmcp import Client, FastMCP
-from localagent import DefaultEnvironment, LocalAgent
-from localagent.types import BaseToolModel, CallToolRequestParams
-from localagent.utils import mcp_tools
+from wingmate import DefaultEnvironment, Wingmate
+from wingmate.types import BaseToolModel, CallToolRequestParams
+from wingmate.utils import mcp_tools
 
 # 1. Define tools using FastMCP
 mcp = FastMCP()
@@ -66,7 +66,7 @@ async def main():
     env = SimpleEnvironment(tools=mcp_tools(client))
 
     # Create the agent
-    agent = LocalAgent(
+    agent = Wingmate(
         environment=env,
         disable_thought=False  # Set to False to see the agent's thinking process
     )
@@ -85,7 +85,7 @@ if __name__ == "__main__":
 
 ### 2. Configure LLM
 
-Create a `local-agent-config.yaml` file in your project root to configure your LLM provider (e.g., OpenAI or OpenAI-compatible):
+Create a `wingmate-config.yaml` file in your project root to configure your LLM provider (e.g., OpenAI or OpenAI-compatible):
 
 ```yaml
 llm_model_name: "gpt-4o"
@@ -102,7 +102,7 @@ python main.py
 
 ## Configuration
 
-LocalAgent uses `pydantic-settings` for configuration. You can configure it using a `local-agent-config.yaml` file, a `.env` file, or environment variables.
+Wingmate uses `pydantic-settings` for configuration. You can configure it using a `wingmate-config.yaml` file, a `.env` file, or environment variables.
 
 | Setting                | Description                                    | Default |
 | ---------------------- | ---------------------------------------------- | ------- |
@@ -117,7 +117,7 @@ LocalAgent uses `pydantic-settings` for configuration. You can configure it usin
 
 ### Custom Environments
 
-The `Environment` class is the heart of LocalAgent's extensibility. By subclassing `DefaultEnvironment` or implementing the `Environment` protocol, you can:
+The `Environment` class is the heart of Wingmate's extensibility. By subclassing `DefaultEnvironment` or implementing the `Environment` protocol, you can:
 
 - **Customize Tool Execution**: Handle tool calls locally, remotely, or via complex pipelines.
 - **Manage Context**: Control how history is stored, retrieved, and presented to the LLM.
@@ -125,7 +125,7 @@ The `Environment` class is the heart of LocalAgent's extensibility. By subclassi
 
 ### Thought Process
 
-LocalAgent can expose the agent's internal "thought" process. When `disable_thought=False` is passed to the `LocalAgent` constructor, the agent will generate a thought trace before taking actions or answering. This is useful for debugging and understanding the agent's reasoning.
+Wingmate can expose the agent's internal "thought" process. When `disable_thought=False` is passed to the `Wingmate` constructor, the agent will generate a thought trace before taking actions or answering. This is useful for debugging and understanding the agent's reasoning.
 
 ## License
 

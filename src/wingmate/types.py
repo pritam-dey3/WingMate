@@ -19,11 +19,11 @@ class CallToolRequestParams[T: BaseModel](BaseModel):
     arguments: T
 
 
-class LocalAgentError(Exception):
+class WingmateError(Exception):
     pass
 
 
-class MaxAgentIterationsExceededError(LocalAgentError):
+class MaxAgentIterationsExceededError(WingmateError):
     pass
 
 
@@ -163,8 +163,8 @@ class TypedTool(Tool, Generic[T_co]):
             if (
                 "meta" in data
                 and data["meta"]
-                and ("localagent" in data["meta"])
-                and ("TERMINATING" in data["meta"]["localagent"])
+                and ("wingmate" in data["meta"])
+                and ("TERMINATING" in data["meta"]["wingmate"])
             ):
                 data["input_model"].__is_terminating__ = True
 
@@ -190,7 +190,7 @@ class BaseToolModel(BaseModel, metaclass=BaseToolMeta):
     @classmethod
     def convert_to_tool(cls) -> TypedTool[type[Self]]:
         if cls.__is_terminating__:
-            meta = {"localagent": ["TERMINATING"]}
+            meta = {"wingmate": ["TERMINATING"]}
         else:
             meta = {}
         tool = TypedTool(
