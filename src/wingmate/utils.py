@@ -17,12 +17,14 @@ def build_agent_response_schema[T: BaseModel](
 def build_agent_response_schema[T: BaseModel](
     disable_thought: bool, tools: Iterable[TypedTool[type[T]]]
 ) -> type[AgentResponse[T] | AgentResponseThoughtful[T]]:
-    if disable_thought:
-        return AgentResponse[Union[*tuple(tool.input_model for tool in tools)]]
+    if len(list(tools)) == 0:
+        tool_type = None
     else:
-        return AgentResponseThoughtful[
-            Union[*tuple(tool.input_model for tool in tools)]
-        ]
+        tool_type = Union[*tuple(tool.input_model for tool in tools)]
+    if disable_thought:
+        return AgentResponse[tool_type]  # type: ignore
+    else:
+        return AgentResponseThoughtful[tool_type]  # type: ignore
 
 
 def mcp_tools(client: Client):
