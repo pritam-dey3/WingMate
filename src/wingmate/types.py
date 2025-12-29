@@ -3,7 +3,6 @@ from enum import Enum
 from typing import Any, Generic, Literal, Self, TypeVar, overload
 
 from json_schema_to_pydantic import create_model as json_schema_to_pydantic_model
-from mcp.types import Tool
 from pydantic import BaseModel, ConfigDict, Field, RootModel, model_validator
 from pydantic._internal._model_construction import ModelMetaclass
 from pydantic.json_schema import SkipJsonSchema
@@ -12,6 +11,29 @@ from typing_extensions import Sentinel
 logger = logging.getLogger(__name__)
 
 TERMINATE = Sentinel("TERMINATE")
+
+
+class McpToolAnnotations(BaseModel):
+    title: str | None = None
+    readOnlyHint: bool | None = None
+    destructiveHint: bool | None = None
+    idempotentHint: bool | None = None
+    openWorldHint: bool | None = None
+    model_config = ConfigDict(extra="allow")
+
+
+class McpTool(BaseModel):
+    """MCP Tool object."""
+
+    name: str
+    title: str | None = None
+    description: str | None = None
+    inputSchema: dict[str, Any]
+    outputSchema: dict[str, Any] | None = None
+    icons: list | None = None
+    annotations: McpToolAnnotations | None = None
+    meta: dict[str, Any] | None = Field(alias="_meta", default=None)
+    model_config = ConfigDict(extra="allow")
 
 
 class CallToolRequestParams[T: BaseModel](BaseModel):
@@ -135,7 +157,7 @@ class OpenAiClientConfig(BaseModel):
 T_co = TypeVar("T_co", bound=type[BaseModel], covariant=True)
 
 
-class TypedTool(Tool, Generic[T_co]):
+class TypedTool(McpTool, Generic[T_co]):
     model_config = ConfigDict(frozen=True)
     input_model: SkipJsonSchema[T_co] = Field(exclude=True)
 
@@ -171,7 +193,7 @@ class TypedTool(Tool, Generic[T_co]):
         return data
 
     @classmethod
-    def from_tool(cls, tool: Tool):
+    def from_tool(cls, tool: McpTool):
         return cls.model_validate(tool.model_dump())
 
 

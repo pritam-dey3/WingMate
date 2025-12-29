@@ -1,0 +1,4 @@
+{
+"thought": "I am thinking",
+"response": "Here is the answer"
+}

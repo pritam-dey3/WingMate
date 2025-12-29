@@ -1,9 +1,14 @@
-from typing import Iterable, Literal, Union, overload
+from typing import Iterable, Literal, Union, cast, overload
 
-from fastmcp import Client
 from pydantic import BaseModel
 
-from .types import AgentResponse, AgentResponseThoughtful, BaseToolModel, TypedTool
+from .types import (
+    AgentResponse,
+    AgentResponseThoughtful,
+    BaseToolModel,
+    McpTool,
+    TypedTool,
+)
 
 
 @overload
@@ -27,7 +32,13 @@ def build_agent_response_schema[T: BaseModel](
         return AgentResponseThoughtful[tool_type]  # type: ignore
 
 
-def mcp_tools(client: Client):
+def mcp_tools(client):
+    try:
+        from fastmcp import Client
+
+        client = cast(Client, client)
+    except ImportError:
+        raise ImportError("fastmcp is not installed.")
     """
     Returns a callable that, when invoked, asynchronously retrieves and returns a list of
     TypedTool instances corresponding to the tools available from the given fastmcp Client.
@@ -42,6 +53,9 @@ def mcp_tools(client: Client):
 
     async def tools() -> list[TypedTool[type[BaseToolModel]]]:
         async with client:
-            return [TypedTool.from_tool(tool) for tool in await client.list_tools()]
+            return [
+                TypedTool.from_tool(McpTool(**tool.model_dump()))
+                for tool in await client.list_tools()
+            ]
 
     return tools
