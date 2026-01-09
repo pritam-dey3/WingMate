@@ -83,27 +83,25 @@ async def stream_agent_response[T: BaseModel](
                 if parsed is not None and parsed != last_yielded:
                     last_yielded = parsed
                     yield parsed
-                # content += event.delta
-                # try:
-                #     parsed = parser.parse(content)
-                #     result = schema.model_validate(parsed)
-                #     if result != last_yielded:
-                #         last_yielded = result
-                #         yield result
-                # except Exception:
-                #     continue
 
 
 async def simulated_agent_stream(path: Path, newline_delimited: bool = True):
     """Simulates streaming by reading a file and yielding its content in chunks."""
     with open(path, "r", encoding="utf-8") as f:
         content = f.read()
+    assert len(content) > 0, "Simulated stream file is empty"
 
     if newline_delimited:
         for line in content.splitlines(keepends=True):
             yield line
     else:
-        import regex
+        try:
+            import regex
+        except ImportError:
+            raise ImportError(
+                "The 'regex' package is required for non-newline delimited simulated streams. "
+                "regex package can be installed along with wingmate via 'pip install wingmate[debug]'"
+            )
 
         _unused_pat = regex.compile(
             r"""'(?i:[sdmt]|ll|ve|re)|[^\r\n\p{L}\p{N}]?+\p{L}++|\p{N}{1,3}+| ?[^\s\p{L}\p{N}]++[\r\n]*+|\s++$|\s*[\r\n]|\s+(?!\S)|\s"""

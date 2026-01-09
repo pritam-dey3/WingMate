@@ -1405,7 +1405,7 @@ wheels = [
 
 [[package]]
 name = "wingmate"
-version = "0.3.2b1"
+version = "0.3.2"
 source = { editable = "." }
 dependencies = [
     { name = "jinja2" },
