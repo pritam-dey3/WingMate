@@ -56,6 +56,7 @@ async def stream_agent_response[T: BaseModel](
         )
         async for chunk in simulated_agent_stream(
             Path(client_config.base_url[5:]),
+            history,
             newline_delimited=client_config.llm_model_name == "newline",
         ):
             parsed = stream_parser.feed(chunk)
@@ -85,14 +86,27 @@ async def stream_agent_response[T: BaseModel](
                     yield parsed
 
 
-async def simulated_agent_stream(path: Path, newline_delimited: bool = True):
+async def simulated_agent_stream(
+    path: Path, history: History, newline_delimited: bool = True
+):
     """Simulates streaming by reading a file and yielding its content in chunks."""
     with open(path, "r", encoding="utf-8") as f:
         content = f.read()
     assert len(content) > 0, "Simulated stream file is empty"
+    messages = content.split("\n<---xxx--->\n")
+
+    if len(messages) > 1:
+        current_msg_idx = sum(1 for msg in history.root if msg.role == "assistant")
+        assert current_msg_idx < len(messages), (
+            f"Not enough messages in simulated stream file {path} for current history. "
+            f"Current message index: {current_msg_idx}, total messages in file: {len(messages)}"
+        )
+        msg_content = messages[current_msg_idx]
+    else:
+        msg_content = content
 
     if newline_delimited:
-        for line in content.splitlines(keepends=True):
+        for line in msg_content.splitlines(keepends=True):
             yield line
     else:
         try:
@@ -106,7 +120,7 @@ async def simulated_agent_stream(path: Path, newline_delimited: bool = True):
         _unused_pat = regex.compile(
             r"""'(?i:[sdmt]|ll|ve|re)|[^\r\n\p{L}\p{N}]?+\p{L}++|\p{N}{1,3}+| ?[^\s\p{L}\p{N}]++[\r\n]*+|\s++$|\s*[\r\n]|\s+(?!\S)|\s"""
         )
-        for piece in regex.findall(_unused_pat, content):
+        for piece in regex.findall(_unused_pat, msg_content):
             yield piece
 
 
