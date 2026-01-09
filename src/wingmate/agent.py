@@ -129,8 +129,9 @@ class Agent[T: BaseToolModel, R: AgentResponse | AgentResponseThoughtful]:
             ):
                 yield response  # type: ignore
 
-            # Agent Message Completion Hook via Environment
             assert response, "Agent failed to produce a response"
+
+            response.turn_completed = True
             self.environment.history.add_message(
                 role="assistant",
                 content=response.model_dump_json(
@@ -141,10 +142,8 @@ class Agent[T: BaseToolModel, R: AgentResponse | AgentResponseThoughtful]:
                     exclude_unset=True,
                 ),
             )
-
-            # Environment handles tool execution and continuation decision
-            response.turn_completed = True
             yield response  # type: ignore
+
             if not self.require_terminating_tool_call and response.action is None:
                 logger.debug("Agent terminating as no tool call was made in this turn.")
                 return
